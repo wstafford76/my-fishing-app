@@ -152,6 +152,17 @@ nav {
   font-size: .9rem;
 }
 
+.pdf-viewer[hidden]{display:none!important}
+.pdf-viewer{position:fixed;inset:0;z-index:9999;background:#0b1724;display:flex;flex-direction:column;color:#fff}
+.pdf-toolbar{display:flex;align-items:center;gap:8px;padding:10px max(12px,env(safe-area-inset-right)) 10px max(12px,env(safe-area-inset-left));background:#10243a;flex-wrap:wrap}
+.pdf-toolbar strong{flex:1;min-width:140px;font-size:.95rem}
+.pdf-toolbar button{border:1px solid #526579;background:#1c4262;color:#fff;border-radius:8px;padding:8px 11px;font:inherit}
+.pdf-status{text-align:center;padding:8px;font-size:.85rem;background:#162f48}
+.pdf-stage{flex:1;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:12px;background:#263646}
+#pdfCanvas{max-width:100%;height:auto;background:#fff;box-shadow:0 2px 14px #0008}
+.pdf-nav{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;background:#10243a;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.pdf-nav button{border:1px solid #526579;background:#1c4262;color:#fff;border-radius:8px;padding:9px 14px;font:inherit}
+.pdf-nav button:disabled{opacity:.4}
 footer {
   text-align: center;
   color: var(--muted);
@@ -240,7 +251,7 @@ data-search="freshwater bass largemouth smallmouth carolina rig fishing bait sof
   <span class="tag">FRESHWATER</span>
   <h2>Freshwater Carolina Rig</h2>
   <p>Approved setup guide with recommended knots for freshwater fishing.</p>
-  <a class="open" href="https://cdn.jsdelivr.net/gh/wstafford76/my-fishing-reference-backup@main/guides/Freshwater_Carolina_Rig_Approved_Recommended_Knots_6x4.pdf" target="_blank" rel="noopener">Open guide</a>
+  <button class="open" type="button" data-pdf-url="https://raw.githubusercontent.com/wstafford76/my-fishing-reference-backup/main/guides/Freshwater_Carolina_Rig_Approved_Recommended_Knots_6x4.pdf" data-pdf-title="Freshwater Carolina Rig">Open guide</button>
 </article>
 
 <article class="card"
@@ -249,7 +260,7 @@ data-search="saltwater gulf coast carolina rig speckled trout spotted seatrout r
   <span class="tag">SALTWATER</span>
   <h2>Saltwater Carolina Rig — Gulf Coast</h2>
   <p>Gulf Coast Carolina rig reference for inshore saltwater fishing.</p>
-  <a class="open" href="https://cdn.jsdelivr.net/gh/wstafford76/my-fishing-reference-backup@main/guides/Carolina_Rig_Saltwater_Gulf_Coast_6x4.pdf" target="_blank" rel="noopener">Open guide</a>
+  <button class="open" type="button" data-pdf-url="https://raw.githubusercontent.com/wstafford76/my-fishing-reference-backup/main/guides/Carolina_Rig_Saltwater_Gulf_Coast_6x4.pdf" data-pdf-title="Saltwater Carolina Rig — Gulf Coast">Open guide</button>
 </article>
 
 <article class="card"
@@ -258,7 +269,7 @@ data-search="bull drum black drum red drum fish finder rig surf fishing beach fi
   <span class="tag">SALTWATER</span>
   <h2>Bull Drum Fish Finder Rig</h2>
   <p>Approved fish-finder rig reference for targeting bull drum.</p>
-  <a class="open" href="https://cdn.jsdelivr.net/gh/wstafford76/my-fishing-reference-backup@main/guides/Bull_Drum_Fish_Finder_Rig_APPROVED_6x4.pdf" target="_blank" rel="noopener">Open guide</a>
+  <button class="open" type="button" data-pdf-url="https://raw.githubusercontent.com/wstafford76/my-fishing-reference-backup/main/guides/Bull_Drum_Fish_Finder_Rig_APPROVED_6x4.pdf" data-pdf-title="Bull Drum Fish Finder Rig">Open guide</button>
 </article>
 
 <article class="card"
@@ -267,7 +278,7 @@ data-search="saltwater artificial bait lures soft plastics paddle tails shrimp i
   <span class="tag">SALTWATER</span>
   <h2>Saltwater Artificial Soft Plastics</h2>
   <p>Approved soft-plastic rig and lure reference for Gulf Coast species.</p>
-  <a class="open" href="https://cdn.jsdelivr.net/gh/wstafford76/my-fishing-reference-backup@main/guides/Saltwater_Artificial_Soft_Plastic_Rig_Guide_Approved.pdf" target="_blank" rel="noopener">Open guide</a>
+  <button class="open" type="button" data-pdf-url="https://raw.githubusercontent.com/wstafford76/my-fishing-reference-backup/main/guides/Saltwater_Artificial_Soft_Plastic_Rig_Guide_Approved.pdf" data-pdf-title="Saltwater Artificial Soft Plastics">Open guide</button>
 </article>
 
 <article class="card"
@@ -276,7 +287,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   <span class="tag">LURE SELECTION</span>
   <h2>Butcher’s Bite — Lure Selection</h2>
   <p>29-page guide covering water clarity, light, depth, contrast, silhouette, and lure-color decisions.</p>
-  <a class="open" href="https://docs.google.com/gview?embedded=1&url=https%3A%2F%2Fraw.githubusercontent.com%2Fwstafford76%2Fmy-fishing-reference-backup%2Fmain%2Fguides%2FButchers_Bite_Pocket_Guide_VIDEO_ORDER.pdf" target="_blank" rel="noopener">Open guide</a>
+  <button class="open" type="button" data-pdf-url="https://raw.githubusercontent.com/wstafford76/my-fishing-reference-backup/main/guides/Butchers_Bite_Pocket_Guide_VIDEO_ORDER.pdf" data-pdf-title="Butcher’s Bite — Lure Selection">Open guide</button>
 </article>
 
 </section>
@@ -326,6 +337,22 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 
 <footer>My Fishing Reference · Personal fishing guide</footer>
 
+<section id="pdfViewer" class="pdf-viewer" hidden aria-label="PDF guide viewer">
+  <div class="pdf-toolbar">
+    <button type="button" id="pdfClose">Close</button>
+    <strong id="pdfTitle">Fishing Guide</strong>
+    <button type="button" id="pdfZoomOut" aria-label="Zoom out">−</button>
+    <button type="button" id="pdfZoomIn" aria-label="Zoom in">+</button>
+  </div>
+  <div id="pdfStatus" class="pdf-status">Loading guide…</div>
+  <div class="pdf-stage"><canvas id="pdfCanvas"></canvas></div>
+  <div class="pdf-nav">
+    <button type="button" id="pdfPrev">Previous</button>
+    <span id="pdfPage">Page 1 / 1</span>
+    <button type="button" id="pdfNext">Next</button>
+  </div>
+</section>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 (() => {
 
@@ -540,6 +567,61 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     event.target.value = '';
   });
   renderInventory();
+
+  // In-app PDF viewer: renders one page at a time to keep mobile memory use low.
+  const pdfViewer = document.getElementById('pdfViewer');
+  const pdfCanvas = document.getElementById('pdfCanvas');
+  const pdfCtx = pdfCanvas.getContext('2d');
+  const pdfStatus = document.getElementById('pdfStatus');
+  const pdfPageLabel = document.getElementById('pdfPage');
+  let activePdf = null, activePdfPage = 1, activePdfScale = 1, activePdfRender = null;
+  async function renderPdfPage() {
+    if (!activePdf) return;
+    if (activePdfRender) { try { activePdfRender.cancel(); } catch(e) {} }
+    const page = await activePdf.getPage(activePdfPage);
+    const stage = document.querySelector('.pdf-stage');
+    const base = Math.max(0.5, (stage.clientWidth - 24) / page.getViewport({scale:1}).width);
+    const viewport = page.getViewport({scale:base * activePdfScale * (window.devicePixelRatio || 1)});
+    pdfCanvas.width = Math.floor(viewport.width);
+    pdfCanvas.height = Math.floor(viewport.height);
+    pdfCanvas.style.width = Math.floor(viewport.width / (window.devicePixelRatio || 1)) + 'px';
+    pdfCanvas.style.height = Math.floor(viewport.height / (window.devicePixelRatio || 1)) + 'px';
+    pdfPageLabel.textContent = 'Page ' + activePdfPage + ' / ' + activePdf.numPages;
+    document.getElementById('pdfPrev').disabled = activePdfPage <= 1;
+    document.getElementById('pdfNext').disabled = activePdfPage >= activePdf.numPages;
+    activePdfRender = page.render({canvasContext:pdfCtx,viewport});
+    try { await activePdfRender.promise; } catch(e) { if(e.name !== 'RenderingCancelledException') throw e; }
+    activePdfRender = null;
+  }
+  document.querySelectorAll('[data-pdf-url]').forEach(button => button.addEventListener('click', async () => {
+    pdfViewer.hidden = false;
+    document.body.style.overflow = 'hidden';
+    document.getElementById('pdfTitle').textContent = button.dataset.pdfTitle || 'Fishing Guide';
+    pdfStatus.textContent = 'Loading guide…';
+    pdfCanvas.width = 0; pdfCanvas.height = 0;
+    activePdf = null; activePdfPage = 1; activePdfScale = 1;
+    try {
+      if (!window.pdfjsLib) throw new Error('The PDF viewer library did not load. Check your internet connection and try again.');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      activePdf = await pdfjsLib.getDocument({url:button.dataset.pdfUrl}).promise;
+      pdfStatus.textContent = 'Guide loaded';
+      await renderPdfPage();
+      pdfStatus.textContent = '';
+    } catch(error) {
+      pdfStatus.textContent = 'Could not load this guide: ' + (error.message || 'Unknown error');
+    }
+  }));
+  function closePdfViewer() {
+    pdfViewer.hidden = true;
+    document.body.style.overflow = '';
+    activePdf = null;
+  }
+  document.getElementById('pdfClose').addEventListener('click',closePdfViewer);
+  document.getElementById('pdfPrev').addEventListener('click',async()=>{if(activePdf&&activePdfPage>1){activePdfPage--;await renderPdfPage();}});
+  document.getElementById('pdfNext').addEventListener('click',async()=>{if(activePdf&&activePdfPage<activePdf.numPages){activePdfPage++;await renderPdfPage();}});
+  document.getElementById('pdfZoomIn').addEventListener('click',async()=>{if(activePdf){activePdfScale=Math.min(2.5,activePdfScale+0.2);await renderPdfPage();}});
+  document.getElementById('pdfZoomOut').addEventListener('click',async()=>{if(activePdf){activePdfScale=Math.max(0.6,activePdfScale-0.2);await renderPdfPage();}});
+  window.addEventListener('resize',()=>{if(activePdf&&!pdfViewer.hidden)renderPdfPage().catch(()=>{});});
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
