@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#10243a">
-<meta name="description" content="A personal, offline-ready fishing reference guide.">
+<meta name="description" content="CastPoint — fishing locations, conditions, trip planning, tackle, and fishing logs.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.png" type="image/png">
 <link rel="apple-touch-icon" href="icon.png">
-<title>My Fishing Reference</title>
+<title>CastPoint</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -279,7 +279,7 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
 
 <header>
   <div class="wrap">
-    <h1>My Fishing Reference</h1>
+    <h1>CastPoint</h1>
     <p>Rig setups, lure selection, and quick fishing guides</p>
   </div>
 </header>
@@ -635,7 +635,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 
 </main>
 
-<footer>My Fishing Reference · Personal fishing guide</footer>
+<footer>CastPoint · Your fishing companion</footer>
 
 <section id="pdfViewer" class="pdf-viewer" hidden aria-label="PDF guide viewer">
   <div class="pdf-toolbar">
@@ -864,7 +864,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       const data = JSON.parse(await file.text());
       if (!Array.isArray(data) || !data.every(x => x && typeof x.name === 'string')) throw new Error('Invalid inventory backup');
       if (confirm(`Replace the current inventory with ${data.length} imported entries?`)) { inventory = data; persist(); renderInventory(); }
-    } catch (e) { alert('That file is not a valid My Fishing Reference inventory backup.'); }
+    } catch (e) { alert('That file is not a valid CastPoint inventory backup.'); }
     event.target.value = '';
   });
   renderInventory();
@@ -1599,7 +1599,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   function saveLog(){try{localStorage.setItem(LOG_KEY,JSON.stringify(catchEntries));return true;}catch(e){alert('Could not save the fishing log in this browser. Export a backup and check available storage.');return false;}}
   async function renderLog(){catchList.innerHTML='';if(!catchEntries.length){catchList.innerHTML='<p class="small-note">No catches logged yet. Add your first catch above.</p>';return;}for(const entry of [...catchEntries].sort((a,b)=>b.date.localeCompare(a.date))){const card=document.createElement('article');card.className='catch-card';const title=document.createElement('h3');title.textContent=entry.species;const meta=document.createElement('div');meta.className='catch-meta';meta.textContent=[entry.date,entry.location,entry.mode].filter(Boolean).join(' · ');card.append(title,meta);const details=document.createElement('p');details.textContent=[entry.length&&'Length: '+entry.length,entry.weight&&'Weight: '+entry.weight,entry.bait&&'Bait/lure: '+entry.bait,entry.rig&&'Rig: '+entry.rig].filter(Boolean).join('  |  ');card.append(details);if(entry.notes){const note=document.createElement('p');note.textContent=entry.notes;card.append(note);}if(entry.conditions){const c=entry.conditions,summary=document.createElement('p');summary.textContent='Conditions logged: '+[c.temperatureF!=null?'Temp '+c.temperatureF+'°F':null,c.windMph!=null?'Wind '+c.windMph+' mph':null,c.pressureHpa!=null?'Pressure '+c.pressureHpa+' hPa':null,c.pressureTrend?'Pressure '+c.pressureTrend:null,c.pressureChange24hHpa!=null?'24h '+(c.pressureChange24hHpa>0?'+':'')+c.pressureChange24hHpa.toFixed(1)+' hPa':null,c.waveHeightFt!=null?'Waves '+c.waveHeightFt+' ft':null].filter(Boolean).join(' · ');card.append(summary);}if(entry.photos?.length){const photos=document.createElement('div');photos.className='catch-photos';for(const id of entry.photos){try{const blob=await photoGet(id);if(blob){const img=document.createElement('img');img.alt='Catch photo';img.src=URL.createObjectURL(blob);photos.append(img);}}catch(e){}}card.append(photos);}const actions=document.createElement('div');actions.className='item-buttons';const del=document.createElement('button');del.type='button';del.textContent='Delete catch';del.addEventListener('click',async()=>{if(!confirm('Delete this catch and its saved photos?'))return;for(const id of entry.photos||[]){try{await photoDelete(id);}catch(e){}}catchEntries=catchEntries.filter(x=>x.id!==entry.id);if(saveLog())renderLog();});actions.append(del);card.append(actions);catchList.append(card);}}
   catchForm.addEventListener('submit',async event=>{event.preventDefault();const btn=document.getElementById('saveCatch'),status=document.getElementById('logStatus');btn.disabled=true;status.textContent='Saving catch and photos…';const data=new FormData(catchForm),entry={id:'catch-'+Date.now()};['date','mode','location','species','length','weight','bait','rig','notes'].forEach(k=>entry[k]=String(data.get(k)||'').trim());entry.photos=[];if(lastConditionSnapshot){entry.conditions={...lastConditionSnapshot};entry.conditions.location=entry.location||entry.conditions.location;}try{for(const file of Array.from(photoInput.files||[]).slice(0,6)){const id=entry.id+'-'+entry.photos.length;const blob=await compressPhoto(file);await photoPut(id,blob);entry.photos.push(id);}catchEntries.push(entry);if(saveLog()){catchForm.reset();document.getElementById('catchDate').value=localDate(new Date());preview.innerHTML='';status.textContent='Catch saved on this device.';await renderLog();}else{for(const id of entry.photos)await photoDelete(id);}}catch(e){status.textContent='Could not save: '+e.message;}finally{btn.disabled=false;}});
-  document.getElementById('exportLog').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({format:'My Fishing Reference Fishing Log Backup',version:2,entries:catchEntries,tripConditions:tripConditionEntries},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='my-fishing-reference-catch-log.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
+  document.getElementById('exportLog').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({format:'My Fishing Reference Fishing Log Backup',version:2,entries:catchEntries,tripConditions:tripConditionEntries},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='castpoint-catch-log.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
   renderLog();
 
     // In-app PDF viewer: renders one page at a time to keep mobile memory use low.
