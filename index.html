@@ -641,6 +641,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   const conditionStatus = document.getElementById('conditionStatus');
   const conditionResults = document.getElementById('conditionResults');
   let conditionCoords = null;
+  const setCondition = (id,value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
   const satelliteImage=document.getElementById('weatherSatelliteImage');
   if(satelliteImage){
     satelliteImage.addEventListener('error',()=>{
@@ -657,7 +658,6 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   }
   refreshSatellite();
   setInterval(refreshSatellite,5*60*1000);
-  const setCondition = (id,value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
   const fmt = (v,unit,digits=0) => Number.isFinite(v) ? Number(v).toFixed(digits)+unit : '—';
   const compass = v => Number.isFinite(v) ? ['N','NE','E','SE','S','SW','W','NW'][Math.round((((v%360)+360)%360)/45)%8]+' ('+Math.round(v)+'°)' : '—';
   async function loadConditions(lat,lon,label) {
