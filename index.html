@@ -241,6 +241,7 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
 
 /* Interactive fishing map */
 .fishing-map-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.current-direction-arrow{background:transparent;border:0}
 #fishingMap{height:360px;width:100%;border:1px solid var(--line);border-radius:12px;z-index:1;background:#dbe4e9}
 .map-help{font-size:.84rem;color:var(--muted);margin:6px 0}
 @media(max-width:560px){#fishingMap{height:330px}}
@@ -387,9 +388,11 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <button class="action" id="mapSatellite" type="button" aria-pressed="true">Satellite</button>
       <button class="action secondary" id="mapStreet" type="button" aria-pressed="false">Street map</button>
       <button class="action secondary" id="mapGPS" type="button">Center on my GPS</button>
+      <button class="action" id="mapCurrentOverlay" type="button" aria-pressed="true">Current overlay: on</button>
     </div>
     <div id="fishingMap" role="application" aria-label="Interactive fishing location map"></div>
     <p id="mapStatus" class="map-help" role="status">Loading map…</p>
+    <div id="mapOverlayLegend" class="map-help" hidden><strong>Map overlay legend:</strong> Selected fishing spot · NOAA arrow = predicted tidal-current direction at the station · USGS marker = nearby stream gauge (flow volume only; no direction measurement).</div>
   </div>
   <div class="conditions-location" style="margin-top:12px">
     <label for="conditionDate" style="font-weight:600;color:var(--navy)">Plan a trip date (forecast up to 16 days):</label>
@@ -877,7 +880,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   const fmt = (v,unit,digits=0) => Number.isFinite(v) ? Number(v).toFixed(digits)+unit : '—';
   const compass = v => Number.isFinite(v) ? ['N','NE','E','SE','S','SW','W','NW'][Math.round((((v%360)+360)%360)/45)%8]+' ('+Math.round(v)+'°)' : '—';
   // Interactive map: satellite by default; taps select coordinates and load conditions.
-  let fishingMap=null,mapMarker=null,mapTiles=null;
+  let fishingMap=null,mapMarker=null,mapTiles=null,currentOverlayLayer=null,currentOverlayEnabled=true,currentOverlayData=null;
   const mapStatus=document.getElementById('mapStatus');
   function initFishingMap(){
     if(fishingMap||!window.L)return;
@@ -885,6 +888,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     fishingMap._satelliteLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
     fishingMap._streetLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'});
     mapTiles=fishingMap._satelliteLayer;mapTiles.addTo(fishingMap);
+    currentOverlayLayer=L.layerGroup().addTo(fishingMap);
     fishingMap.on('click',async e=>{
       const lat=e.latlng.lat,lon=e.latlng.lng,label='Map pin · '+lat.toFixed(5)+', '+lon.toFixed(5);
       document.getElementById('conditionPlace').value=label;mapStatus.textContent='Selected map point. Loading conditions…';
@@ -901,6 +905,40 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     fishingMap.setView(point,Math.max(fishingMap.getZoom(),13));
     mapStatus.textContent='Selected: '+(label||'Fishing spot')+' · '+lat.toFixed(5)+', '+lon.toFixed(5);
   }
+  function renderCurrentMapOverlay(data){
+    currentOverlayData=data;
+    initFishingMap();
+    if(!fishingMap||!currentOverlayLayer)return;
+    currentOverlayLayer.clearLayers();
+    const legend=document.getElementById('mapOverlayLegend');
+    if(legend)legend.hidden=!currentOverlayEnabled||!data;
+    if(!currentOverlayEnabled||!data)return;
+    if(Number.isFinite(data.stationLat)&&Number.isFinite(data.stationLon)){
+      const point=[data.stationLat,data.stationLon];
+      const marker=L.circleMarker(point,{radius:9,color:data.kind==='noaa'?'#f59e0b':'#2563eb',weight:3,fillColor:'#fff',fillOpacity:1}).addTo(currentOverlayLayer);
+      marker.bindPopup('<strong>'+escapeHtml(data.stationName||'Monitoring station')+'</strong><br>'+escapeHtml(data.stationDetail||''));
+      if(data.kind==='noaa'&&Number.isFinite(data.direction)){
+        const radians=data.direction*Math.PI/180;
+        const end=[data.stationLat+Math.cos(radians)*0.012,data.stationLon+Math.sin(radians)*0.012/Math.max(0.25,Math.cos(data.stationLat*Math.PI/180))];
+        L.polyline([point,end],{color:'#f59e0b',weight:5,opacity:.95}).addTo(currentOverlayLayer);
+        const arrow=L.marker(end,{interactive:false,icon:L.divIcon({className:'current-direction-arrow',html:'<span style="display:block;color:#f59e0b;font-size:30px;font-weight:900;line-height:24px;text-shadow:0 1px 3px #fff;transform:rotate('+data.direction+'deg)">↑</span>',iconSize:[26,30],iconAnchor:[13,15]})}).addTo(currentOverlayLayer);
+      }
+    }
+    if(conditionCoords){
+      L.circle(conditionCoords.lat? [conditionCoords.lat,conditionCoords.lon]:[conditionCoords.lat,conditionCoords.lon],{radius:90,color:'#16a34a',weight:2,fillOpacity:.08}).addTo(currentOverlayLayer)
+        .bindPopup('<strong>Selected fishing location</strong><br>'+escapeHtml(conditionCoords.label||'Fishing spot'));
+    }
+  }
+  function setCurrentOverlayEnabled(enabled){
+    currentOverlayEnabled=enabled;
+    const button=document.getElementById('mapCurrentOverlay');
+    button.textContent='Current overlay: '+(enabled?'on':'off');
+    button.className='action'+(enabled?'':' secondary');
+    button.setAttribute('aria-pressed',String(enabled));
+    if(currentOverlayLayer){if(enabled)currentOverlayLayer.addTo(fishingMap);else currentOverlayLayer.clearLayers();}
+    renderCurrentMapOverlay(currentOverlayData);
+  }
+  document.getElementById('mapCurrentOverlay').addEventListener('click',()=>setCurrentOverlayEnabled(!currentOverlayEnabled));
   function setMapLayer(layer){
     initFishingMap();if(!fishingMap)return;
     if(mapTiles)fishingMap.removeLayer(mapTiles);
@@ -1006,6 +1044,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     ['waterCurrentState','waterCurrentSpeed','waterCurrentDirection','waterCurrentNext'].forEach(id=>setCondition(id,'Unavailable'));
     setCondition('waterCurrentStation',message);
     setCondition('waterCurrentCaveat','No reliable nearby measurement or prediction was returned. The app will not estimate a current speed or direction.');
+    renderCurrentMapOverlay(null);
   }
   const waterCurrentCompass=deg=>['N','NE','E','SE','S','SW','W','NW'][Math.round((((Number(deg)%360)+360)%360)/45)%8]+' ('+Math.round(Number(deg))+'°)';
   const milesBetween=(a,b)=>{const rad=x=>x*Math.PI/180,dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon),h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 3958.8*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));};
@@ -1064,6 +1103,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     const depthNote=station.depth!==null?' · prediction depth '+station.depth+' ft'+(station.depthType==='S'?' below surface':station.depthType==='B'?' below chart datum':''):' · depth not specified';
     setCondition('waterCurrentStation','Nearest station: '+station.name+' · '+station.distance.toFixed(1)+' mi away'+depthNote+'.');
     setCondition('waterCurrentCaveat','This is a station prediction, not a live reading at your exact beach or pass. Current can vary across channels, guts, and shoreline structure. Check the station location before relying on it.');
+    renderCurrentMapOverlay({kind:'noaa',stationLat:Number(station.lat),stationLon:Number(station.lng),stationName:station.name,direction:Number.isFinite(Number(current?.Direction))?Number(current.Direction):null,stationDetail:'NOAA tidal-current prediction · '+speed+' · '+direction+' · '+station.distance.toFixed(1)+' mi from selected spot'});
   }
   async function loadUSGSWaterCurrent(lat,lon){
     setCondition('waterCurrentIntro','Searching nearby USGS monitoring locations for measured streamflow…');
@@ -1102,6 +1142,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     setCondition('waterCurrentStation',station.id+' · '+station.distance.toFixed(1)+' mi away.');
     const stamp=flow?.time||height?.time;
     setCondition('waterCurrentCaveat','Streamflow is water volume passing the gauge, not current speed at your fishing bank. Gauge height is relative to that gauge’s reference, not lake depth. Latest reading: '+(stamp?new Date(stamp).toLocaleString():'time unavailable')+'. Lakes and ponds may have wind-driven movement without a nearby stream gauge.');
+    renderCurrentMapOverlay({kind:'usgs',stationLat:station.lat,stationLon:station.lon,stationName:station.id,stationDetail:'USGS stream gauge · '+(flow?flow.value+' cfs':'flow unavailable')+' · '+station.distance.toFixed(1)+' mi from selected spot. Flow direction is not measured.'});
   }
   async function findConditionPlace() {
     const q=document.getElementById('conditionPlace').value.trim();
