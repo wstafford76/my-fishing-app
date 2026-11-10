@@ -212,6 +212,20 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
 @media(max-width:620px){.conditions-location{grid-template-columns:1fr 1fr}.conditions-location input{grid-column:1/-1}}
 @media(max-width:560px){.inventory-tools{grid-template-columns:1fr}.inventory-item{grid-template-columns:1fr}.item-buttons{justify-content:flex-end}.form-grid{grid-template-columns:1fr}}
 
+
+/* Fishing log */
+.log-form{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0 18px}
+.photo-preview,.catch-photos{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.photo-preview img,.catch-photos img{width:88px;height:88px;object-fit:cover;border-radius:9px;border:1px solid var(--line)}
+.log-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.catch-list{display:grid;gap:10px;margin-top:10px}
+.catch-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+.catch-card h3{color:var(--navy);margin:0 0 4px}
+.catch-card p{margin:4px 0;color:var(--muted);font-size:.9rem;white-space:pre-wrap}
+.catch-meta{font-size:.78rem;color:#77560b;font-weight:750}
+.catch-card .item-buttons{justify-content:flex-end;margin-top:8px}
+@media(max-width:560px){.log-form{padding:10px}}
+
 </style>
 </head>
 
@@ -231,6 +245,7 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
   <button class="main-tab active" data-panel="guidesPanel">Fishing Guides</button>
   <button class="main-tab" data-panel="inventoryPanel">Tackle Inventory</button>
   <button class="main-tab" data-panel="conditionsPanel">Fishing Conditions</button>
+  <button class="main-tab" data-panel="logPanel">Fishing Log</button>
 </nav>
 <section id="guidesPanel" class="panel">
 <input
@@ -425,6 +440,29 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   </div>
   <p class="small-note">Changes are saved in this browser on this device. Export a backup before clearing browser data or moving to another device.</p>
   <div id="inventoryList" class="inventory-list"></div>
+</section>
+<section id="logPanel" class="panel" hidden>
+  <h2 style="color:var(--navy);margin:0">Fishing Log</h2>
+  <p style="color:var(--muted);margin:4px 0 12px">Record each catch, what worked, and add photos from your phone or camera.</p>
+  <form id="catchForm" class="log-form">
+    <div class="form-grid">
+      <label>Date<input id="catchDate" name="date" type="date" required></label>
+      <label>Fishing style<select id="catchMode" name="mode"><option>Freshwater · Bass</option><option>Surf · Gulf Coast</option></select></label>
+      <label class="wide">Location<input name="location" id="catchLocation" placeholder="e.g. San Luis Pass, Galveston"></label>
+      <label>Species<input name="species" required placeholder="e.g. Redfish, speckled trout, bass"></label>
+      <label>Length<input name="length" placeholder="e.g. 24 in"></label>
+      <label>Weight<input name="weight" placeholder="e.g. 5 lb 8 oz"></label>
+      <label>Bait / lure<input name="bait" placeholder="e.g. live mullet, soft plastic"></label>
+      <label>Rig / presentation<input name="rig" placeholder="e.g. Carolina rig, jighead"></label>
+      <label class="wide">Notes<textarea name="notes" rows="3" placeholder="Conditions, location details, retrieve, what worked…"></textarea></label>
+      <label class="wide">Catch photos<input id="catchPhotos" name="photos" type="file" accept="image/*" multiple></label>
+    </div>
+    <p class="small-note">Photos are resized for storage and saved on this device. Keep a separate backup of important photos.</p>
+    <div id="photoPreview" class="photo-preview"></div>
+    <div class="inventory-actions"><button class="action" id="saveCatch" type="submit">Save catch</button><span id="logStatus" class="small-note" role="status"></span></div>
+  </form>
+  <div class="log-toolbar"><h3 style="color:var(--navy);margin:14px 0 4px">Your catches</h3><button class="action secondary" id="exportLog" type="button">Export log backup</button></div>
+  <div id="catchList" class="catch-list"><p class="small-note">Your saved catches will appear here.</p></div>
 </section>
 
 </main>
@@ -837,6 +875,28 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     const label=d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'});
     document.getElementById('conditionForecastStatus').textContent='Date selected. Tap Check trip forecast to update weather, marine conditions, and tides for '+label+'.';
   });
+
+  // Fishing log: text records in localStorage; compressed catch photos in IndexedDB.
+  const LOG_KEY='myFishingReferenceCatchLogV1';
+  const DB_NAME='myFishingReferencePhotosV1';
+  let catchEntries=[];
+  try{catchEntries=JSON.parse(localStorage.getItem(LOG_KEY)||'[]');if(!Array.isArray(catchEntries))catchEntries=[];}catch(e){catchEntries=[];}
+  const catchForm=document.getElementById('catchForm'),photoInput=document.getElementById('catchPhotos'),preview=document.getElementById('photoPreview'),catchList=document.getElementById('catchList');
+  document.getElementById('catchDate').value=localDate(new Date());
+  document.getElementById('catchMode').value=fishingMode==='surf'?'Surf · Gulf Coast':'Freshwater · Bass';
+  document.getElementById('catchLocation').value=conditionCoords?.label||document.getElementById('conditionPlace').value||'';
+  function openPhotoDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('photos'))req.result.createObjectStore('photos');};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+  async function photoPut(id,blob){const db=await openPhotoDB();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put(blob,id);tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>{db.close();reject(tx.error);};});}
+  async function photoGet(id){const db=await openPhotoDB();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readonly'),req=tx.objectStore('photos').get(id);req.onsuccess=()=>{db.close();resolve(req.result||null);};req.onerror=()=>{db.close();reject(req.error);};});}
+  async function photoDelete(id){const db=await openPhotoDB();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(id);tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>{db.close();reject(tx.error);};});}
+  function compressPhoto(file){return new Promise((resolve,reject)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const scale=Math.min(1,1600/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Photo could not be processed.')),'image/jpeg',.82);};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('One photo could not be opened.'));};img.src=url;});}
+  photoInput.addEventListener('change',()=>{preview.innerHTML='';Array.from(photoInput.files||[]).slice(0,6).forEach(file=>{const img=document.createElement('img');img.alt='Selected catch photo preview';img.src=URL.createObjectURL(file);preview.appendChild(img);});if(photoInput.files.length>6)document.getElementById('logStatus').textContent='Up to 6 photos per catch; only the first 6 will be saved.';});
+  function saveLog(){try{localStorage.setItem(LOG_KEY,JSON.stringify(catchEntries));return true;}catch(e){alert('Could not save the fishing log in this browser. Export a backup and check available storage.');return false;}}
+  async function renderLog(){catchList.innerHTML='';if(!catchEntries.length){catchList.innerHTML='<p class="small-note">No catches logged yet. Add your first catch above.</p>';return;}for(const entry of [...catchEntries].sort((a,b)=>b.date.localeCompare(a.date))){const card=document.createElement('article');card.className='catch-card';const title=document.createElement('h3');title.textContent=entry.species;const meta=document.createElement('div');meta.className='catch-meta';meta.textContent=[entry.date,entry.location,entry.mode].filter(Boolean).join(' · ');card.append(title,meta);const details=document.createElement('p');details.textContent=[entry.length&&'Length: '+entry.length,entry.weight&&'Weight: '+entry.weight,entry.bait&&'Bait/lure: '+entry.bait,entry.rig&&'Rig: '+entry.rig].filter(Boolean).join('  |  ');card.append(details);if(entry.notes){const note=document.createElement('p');note.textContent=entry.notes;card.append(note);}if(entry.photos?.length){const photos=document.createElement('div');photos.className='catch-photos';for(const id of entry.photos){try{const blob=await photoGet(id);if(blob){const img=document.createElement('img');img.alt='Catch photo';img.src=URL.createObjectURL(blob);photos.append(img);}}catch(e){}}card.append(photos);}const actions=document.createElement('div');actions.className='item-buttons';const del=document.createElement('button');del.type='button';del.textContent='Delete catch';del.addEventListener('click',async()=>{if(!confirm('Delete this catch and its saved photos?'))return;for(const id of entry.photos||[]){try{await photoDelete(id);}catch(e){}}catchEntries=catchEntries.filter(x=>x.id!==entry.id);if(saveLog())renderLog();});actions.append(del);card.append(actions);catchList.append(card);}}
+  catchForm.addEventListener('submit',async event=>{event.preventDefault();const btn=document.getElementById('saveCatch'),status=document.getElementById('logStatus');btn.disabled=true;status.textContent='Saving catch and photos…';const data=new FormData(catchForm),entry={id:'catch-'+Date.now()};['date','mode','location','species','length','weight','bait','rig','notes'].forEach(k=>entry[k]=String(data.get(k)||'').trim());entry.photos=[];try{for(const file of Array.from(photoInput.files||[]).slice(0,6)){const id=entry.id+'-'+entry.photos.length;const blob=await compressPhoto(file);await photoPut(id,blob);entry.photos.push(id);}catchEntries.push(entry);if(saveLog()){catchForm.reset();document.getElementById('catchDate').value=localDate(new Date());preview.innerHTML='';status.textContent='Catch saved on this device.';await renderLog();}else{for(const id of entry.photos)await photoDelete(id);}}catch(e){status.textContent='Could not save: '+e.message;}finally{btn.disabled=false;}});
+  document.getElementById('exportLog').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({format:'My Fishing Reference Catch Log',version:1,entries:catchEntries},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='my-fishing-reference-catch-log.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
+  renderLog();
+
     // In-app PDF viewer: renders one page at a time to keep mobile memory use low.
   const pdfViewer = document.getElementById('pdfViewer');
   const pdfCanvas = document.getElementById('pdfCanvas');
