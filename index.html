@@ -254,7 +254,6 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
   <button class="main-tab" data-panel="conditionsPanel">Fishing Location</button>
   <button class="main-tab" data-panel="logPanel">Fishing Log</button>
   <button class="main-tab" data-panel="helpPanel">Help</button>
-  <button class="main-tab" data-panel="baitPanel">Bait & Reports</button>
 </nav>
 <section id="guidesPanel" class="panel">
 <input
@@ -435,6 +434,16 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <p class="small-note">Weather and marine conditions are estimates for the selected coordinates. Tide predictions come from the nearest available NOAA station and may not represent conditions at your exact shoreline.</p>
     </div>
   </div>
+  <div class="log-form" id="locationBaitSection" style="margin-top:18px" hidden>
+    <h3 style="color:var(--navy);margin:0 0 4px">Bait Recommendations & Local Fishing Reports</h3>
+    <p class="small-note">Recommendations are matched to the selected location and fishing style. Check the recent local report searches for what anglers are actually reporting.</p>
+    <p id="baitLocationLabel" class="catch-meta"></p>
+    <div id="baitRecommendations" class="conditions-grid"></div>
+    <h4 style="color:var(--navy);margin:16px 0 6px">Recent online reports for this area</h4>
+    <p id="baitReportNote" class="small-note">Local report searches will appear after a location loads.</p>
+    <div id="baitReportLinks" class="inventory-actions"></div>
+    <p id="baitUpdatedAt" class="small-note">Search results are refreshed by the search provider when opened. The app does not scrape or independently verify individual reports.</p>
+  </div>
 </section>
 <section id="inventoryPanel" class="panel" hidden>
   <h2 style="color:var(--navy);margin:0">Tackle Inventory</h2>
@@ -472,8 +481,8 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   <div id="inventoryList" class="inventory-list"></div>
 </section>
 <section id="helpPanel" class="panel" hidden>
-  <h2 style="color:var(--navy);margin:0">Help & Bait Recommendations</h2>
-  <p class="small-note">Plain-language explanations for your fishing conditions, plus location-specific bait ideas and current report searches.</p>
+  <h2 style="color:var(--navy);margin:0">Fishing Help</h2>
+  <p class="small-note">Plain-language explanations of the fishing conditions and tools in this app.</p>
   <div class="log-form">
     <h3 style="color:var(--navy);margin:0 0 8px">Understanding Fishing Conditions</h3>
     <details open><summary><strong>Barometric pressure</strong></summary><p class="small-note">Air pressure is shown in hectopascals (hPa). Rising means pressure is higher than it was 12 or 24 hours earlier; falling means it is lower. Stable means the change is small. Pressure is only one clue—fish do not respond to a single number in a predictable way.</p></details>
@@ -483,23 +492,6 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <details><summary><strong>Tides</strong></summary><p class="small-note">Incoming tide is water moving toward higher tide; outgoing tide is moving toward lower tide. Current moving through cuts, passes, drains, and channels can concentrate bait and predators. The app uses the nearest available NOAA prediction station, which may not match the exact shoreline.</p></details>
     <details><summary><strong>Best Fishing Windows</strong></summary><p class="small-note">The app compares forecast wind, gusts, rain chance, temperature, pressure trend, and—when available—surf waves. Scores rank forecast periods against one another. They are not catch probabilities, and tide timing is not included in the current scoring model.</p></details>
     <details><summary><strong>Fishing Log and condition timeline</strong></summary><p class="small-note">Catch entries can save the latest loaded conditions automatically. The Trip Conditions Timeline lets you manually record additional readings during a trip, even when you have not caught a fish. Comparing readings with catches over time may reveal patterns, but small samples can be misleading.</p></details>
-  </div>
-</section>
-<section id="baitPanel" class="panel" hidden>
-  <h2 style="color:var(--navy);margin:0">Bait & Local Fishing Reports</h2>
-  <p class="small-note">Location-specific bait ideas and recent fishing report searches for your selected fishing area.</p>
-  <div class="log-form">
-    <p class="small-note">Recommendations are separated by your selected fishing location and fishing style. Use current report links to check what anglers are recently reporting; general bait ideas below are suggestions, not verified local catches.</p>
-    <div class="conditions-location" role="group" aria-label="Bait recommendation fishing type">
-      <button class="action" id="baitFreshwaterMode" type="button" aria-pressed="true">Freshwater</button>
-      <button class="action secondary" id="baitSurfMode" type="button" aria-pressed="false">Surf · Gulf Coast</button>
-    </div>
-    <p id="baitLocationLabel" class="catch-meta">Select a location in Fishing Conditions to personalize this section.</p>
-    <div id="baitRecommendations" class="conditions-grid"></div>
-    <h4 style="color:var(--navy);margin:16px 0 6px">Recent online reports for this area</h4>
-    <p id="baitReportNote" class="small-note">Load a location in Fishing Conditions, then open current report searches.</p>
-    <div id="baitReportLinks" class="inventory-actions"></div>
-    <p id="baitUpdatedAt" class="small-note">Report searches open current online results when tapped. This app does not claim a bait is locally productive unless a report actually says so.</p>
   </div>
 </section>
 <section id="logPanel" class="panel" hidden>
@@ -637,8 +629,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   mainTabs.forEach(tab => tab.addEventListener('click', () => {
     mainTabs.forEach(t => t.classList.toggle('active', t === tab));
     document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== tab.dataset.panel);
-    if(tab.dataset.panel==='conditionsPanel'){initFishingMap();if(fishingMap)setTimeout(()=>fishingMap.invalidateSize(),180);}
-    if(tab.dataset.panel==='helpPanel')renderBaitHelp();
+    if(tab.dataset.panel==='conditionsPanel'){initFishingMap();if(fishingMap)setTimeout(()=>fishingMap.invalidateSize(),180);renderBaitHelp();}
   }));
 
   // Inventory data is seeded once; subsequent edits live in localStorage.
@@ -770,36 +761,27 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   });
   renderInventory();
 
-  let baitFishingMode='freshwater';
-  function setBaitFishingMode(mode){
-    baitFishingMode=mode;
-    const fresh=mode==='freshwater';
-    const f=document.getElementById('baitFreshwaterMode'),s=document.getElementById('baitSurfMode');
-    f.className='action'+(fresh?'':' secondary');s.className='action'+(!fresh?'':' secondary');
-    f.setAttribute('aria-pressed',String(fresh));s.setAttribute('aria-pressed',String(!fresh));
-    renderBaitHelp();
-  }
-  document.getElementById('baitFreshwaterMode').addEventListener('click',()=>setBaitFishingMode('freshwater'));
-  document.getElementById('baitSurfMode').addEventListener('click',()=>setBaitFishingMode('surf'));
   function renderBaitHelp(){
+    const section=document.getElementById('locationBaitSection');
     const label=document.getElementById('baitLocationLabel'),cards=document.getElementById('baitRecommendations'),links=document.getElementById('baitReportLinks'),note=document.getElementById('baitReportNote'),updated=document.getElementById('baitUpdatedAt');
     cards.innerHTML='';links.innerHTML='';
     const place=conditionCoords?.label||document.getElementById('conditionPlace').value.trim();
-    const surf=baitFishingMode==='surf';
-    label.textContent=place?(place+' · '+(surf?'Surf / Gulf Coast':'Freshwater')):'No fishing location selected yet.';
+    const surf=fishingMode==='surf';
+    section.hidden=!place;
+    if(!place){label.textContent='';note.textContent='Load a fishing location to see recommendations and local report searches.';updated.textContent='';return;}
+    label.textContent=place+' · '+(surf?'Surf / Gulf Coast':'Freshwater');
     const ideas=surf?[
       ['Live bait','Live shrimp, finger mullet, and croaker where locally available. Match bait size to target species and current.'],
       ['Cut bait','Cut mullet or crab can be options for drum and other larger bottom-feeding fish.'],
       ['Artificial','Paddle-tail shads, shrimp imitations, and suspending or topwater plugs for active trout and redfish.']
     ]:[
-      ['Soft plastics','Texas-rigged worms, creature baits, and stick worms are versatile starting points for pond bass.'],
-      ['Topwater','Hollow-body frogs around heavy vegetation; walking baits where open water allows.'],
-      ['Moving baits','Spinnerbaits, bladed jigs, and swimbaits can help cover water and locate active bass.']
+      ['Live / natural bait','Worms, minnows, and other locally available forage can work for panfish, crappie, catfish, and bass. Match bait size and presentation to the species.'],
+      ['Soft plastics','Worms, creature baits, grubs, and small paddle tails cover a range of freshwater species.'],
+      ['Moving / topwater baits','Spinnerbaits, small swimbaits, and topwater lures can help locate active fish; frogs are useful around heavy vegetation.']
     ];
     ideas.forEach(([title,body])=>{const el=document.createElement('article');el.className='stat';const strong=document.createElement('strong');strong.textContent=title;const span=document.createElement('span');span.textContent=body;el.append(strong,span);cards.append(el);});
-    if(!place){note.textContent='Choose a location in Fishing Conditions first. These are broad starting points, not local reports.';updated.textContent='Current report searches will be built around the selected place.';return;}
     note.textContent='Searches are specific to '+place+'. Open a result to confirm its publication date, species, bait, and exact area.';
-    const terms=surf?'saltwater fishing report bait trout redfish drum':'bass fishing report bait';
+    const terms=surf?'saltwater fishing report bait trout redfish drum':'freshwater fishing report bait bass crappie catfish';
     const queries=[
       ['Recent fishing reports',place+' '+terms+' latest fishing report'],
       ['Angler reports & forums',place+' fishing report anglers bait'],
@@ -825,6 +807,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     document.getElementById('surfMode').setAttribute('aria-pressed',String(!fresh));
     document.getElementById('forecastMarineFields').hidden=fresh;
     document.getElementById('fishingModeNote').textContent=fresh?'Freshwater mode: weather, pressure, daylight, radar, and nearby water monitoring.':'Surf mode: marine conditions, Gulf satellite imagery, and NOAA tide predictions.';
+    renderBaitHelp();
   }
   document.getElementById('freshwaterMode').addEventListener('click',()=>setFishingMode('freshwater'));
   document.getElementById('surfMode').addEventListener('click',()=>setFishingMode('surf'));
@@ -918,6 +901,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       if(lastConditionSnapshot){lastConditionSnapshot.waveHeightFt=c.wave_height??null;lastConditionSnapshot.wavePeriodSec=c.wave_period??null;lastConditionSnapshot.waveDirectionDegrees=c.wave_direction??null;lastConditionSnapshot.seaTemperatureF=c.sea_surface_temperature??null;}
     } else {['seaWave','seaPeriod','seaDirection','seaTemp'].forEach(id=>setCondition(id,'Unavailable'));}
     conditionStatus.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.';
+    renderBaitHelp();
     if(fishingMode==='surf')loadNearbyTides(lat,lon,document.getElementById('conditionDate').value).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
   }
   async function findConditionPlace() {
