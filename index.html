@@ -398,11 +398,9 @@ on>
   <div class="conditions-location" style="margin-top:12px">
     <label for="conditionDate" style="font-weight:600;color:var(--navy)">Plan a trip date (forecast up to 16 days):</label>
     <input id="conditionDate" type="date" aria-label="Trip date">
-    <button class="action secondary" id="conditionForecast" type="button">Check trip forecast</button>
-    <button class="action secondary" id="tideScheduleButton" type="button">Show tide schedule</button>
+    <button class="action secondary" id="conditionForecast" type="button">Check trip forecast & tides</button>
   </div>
   <div id="conditionForecastStatus" class="small-note" role="status">Choose a location, then select a date to plan your trip.</div>
-  <div id="tideScheduleStatus" class="small-note" role="status">Select a location and date to view high- and low-tide predictions without loading the weather forecast.</div>
   <div id="conditionForecastResults" hidden>
     <h3 id="forecastDateTitle" style="color:var(--navy);margin:16px 0 8px">Trip forecast</h3>
     <div class="conditions-grid">
@@ -417,6 +415,16 @@ on>
         <article class="stat"><strong id="fcWaveDir">—</strong><span>Dominant wave direction</span></article>
       </div>
     </div>
+    <section id="tripTideSchedule" class="log-form" style="margin-top:14px" hidden>
+      <h3 id="tideHeading" style="color:var(--navy);margin:0 0 6px">Tide schedule</h3>
+      <p id="tideDateNote" class="small-note">Predicted high and low tides for your selected trip date.</p>
+      <p id="tideStation" class="small-note"></p>
+      <h4 style="color:var(--navy);margin:12px 0 6px">Morning window · 5–10 AM</h4>
+      <p id="tideMorningSummary" class="small-note"></p>
+      <div id="tideMorningEvents" class="conditions-grid"></div>
+      <h4 style="color:var(--navy);margin:14px 0 6px">High and low tides</h4>
+      <div id="tideAllEvents" class="conditions-grid"></div>
+    </section>
   </div>
   <div class="log-form" style="margin-top:16px">
     <h3 style="color:var(--navy);margin:0 0 6px">Best Fishing Windows</h3>
@@ -436,7 +444,7 @@ on>
       <article class="stat"><strong id="wxHumidity">—</strong><span>Humidity</span></article>
       <article class="stat"><strong id="wxRain">—</strong><span>Precipitation</span></article>
     </div>
-    <section id="tideCurrentReport" class="log-form" style="margin-top:18px">
+    <section id="tideCurrentReport" class="log-form" style="margin-top:18px" hidden>
       <h3 style="color:var(--navy);margin:0 0 4px">Tide & Current Report</h3>
       <p id="tideCurrentUpdated" class="small-note">Choose a saltwater location to load the latest report.</p>
       <div class="conditions-grid">
@@ -494,14 +502,6 @@ on>
       <p class="small-note" style="text-align:center;margin:8px 0 4px">Source: NOAA / NESDIS / STAR · GOES-19 GeoColor</p>
       <p style="text-align:center;margin:4px 0"><a href="https://www.star.nesdis.noaa.gov/goes/sector_band.php?band=GEOCOLOR&length=12&sat=G19&sector=ga" target="_blank" rel="noopener">Open NOAA satellite viewer full screen</a></p>
     </div>
-    <h3 id="tideHeading" style="color:var(--navy);margin:20px 0 8px">Tides for today</h3>
-    <p id="tideDateNote" class="small-note">All predicted high and low tides for the selected day.</p>
-    <p id="tideStation" class="small-note">Finding the nearest NOAA tide station…</p>
-    <h4 style="color:var(--navy);margin:12px 0 6px">Your usual morning window · 5–10 AM</h4>
-    <p id="tideMorningSummary" class="small-note">Tide movement during your morning fishing window will appear here.</p>
-    <div id="tideMorningEvents" class="conditions-grid"></div>
-    <h4 style="color:var(--navy);margin:16px 0 6px">All tides throughout the day</h4>
-    <div id="tideAllEvents" class="conditions-grid"></div>
     <p class="small-note">Weather and marine conditions are estimates for the selected coordinates. Tide predictions come from the nearest available NOAA station and may not represent conditions at your exact shoreline.</p>
     </div>
   </div>
@@ -1370,19 +1370,6 @@ on>
     setCondition('tideMorningSummary',summary);
   }
 
-  document.getElementById('tideScheduleButton').addEventListener('click',async()=>{
-    const status=document.getElementById('tideScheduleStatus');
-    if(!conditionCoords){status.textContent='Find a fishing location or use GPS before checking tide predictions.';return;}
-    const selected=conditionDate.value;
-    if(!selected){status.textContent='Choose a trip date first.';return;}
-    if(selected<today||selected>lastForecastDay){status.textContent='Choose a date within the available 16-day planning window.';return;}
-    if(fishingMode!=='surf'){status.textContent='Tide predictions are available in saltwater mode. Confirm the fishing location or switch to Saltwater.';return;}
-    status.textContent='Loading NOAA high- and low-tide predictions…';
-    try{
-      await loadNearbyTides(conditionCoords.lat,conditionCoords.lon,selected);
-      status.textContent='NOAA tide schedule loaded for '+new Date(selected+'T12:00:00').toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'})+'. See all predicted high and low tides below.';
-    }catch(e){status.textContent='Could not load the tide schedule: '+(e.message||'NOAA service unavailable');}
-  });
   const conditionDate=document.getElementById('conditionDate');
   const localDate=d=>{const x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,10);};
   const today=localDate(new Date()),lastForecastDay=localDate(new Date(Date.now()+15*86400000));
@@ -1417,8 +1404,13 @@ on>
       setCondition('fcWavePeriod',fmt(d.wave_period_max[mi],' sec',1));
       setCondition('fcWaveDir',compass(d.wave_direction_dominant[mi]));
     } else ['fcWave','fcWavePeriod','fcWaveDir'].forEach(id=>setCondition(id,'Unavailable'));
-    status.textContent='Forecast updated. Forecasts are estimates and can change as the trip date approaches.';
-    if(fishingMode==='surf')loadNearbyTides(lat,lon,selected).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
+    status.textContent='Forecast updated. '+(fishingMode==='surf'?'Weather, marine conditions, and tide schedule are shown together below.':'Weather forecast updated. Forecasts are estimates and can change as the trip date approaches.');
+    const tidePanel=document.getElementById('tripTideSchedule');
+    if(fishingMode==='surf'){
+      tidePanel.hidden=false;
+      setCondition('tideStation','Loading nearest NOAA tide station…');
+      loadNearbyTides(lat,lon,selected).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
+    } else {tidePanel.hidden=true;}
   }
   async function calculateBestWindows(){
     const status=document.getElementById('bestWindowsStatus'),out=document.getElementById('bestWindowsResults');
