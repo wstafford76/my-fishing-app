@@ -981,12 +981,41 @@ on>
       try{await loadConditions(lat,lon,label);mapStatus.textContent='GPS location selected and conditions loaded.';}catch(e){mapStatus.textContent=e.message;}
     },err=>{mapStatus.textContent=err.code===1?'GPS permission was denied.':'Could not get GPS location.';},{enableHighAccuracy:true,timeout:15000,maximumAge:300000});
   });
-  async function loadConditions(lat,lon,label) {
+  function classifyFishingLocationText(value){
+    const text=String(value||'').toLowerCase();
+    const has=(words)=>words.some(word=>new RegExp('(^|[^a-z])'+word.replace(/[.*+?^${}()|[\]\\]/g,'\\  async function loadConditions(lat,lon,label) {
     conditionCoords={lat,lon,label};
     // San Luis Pass is a coastal fishing location; keep its conditions in Surf mode.
     const isSanLuisPass=/san luis pass/i.test(String(label||'')) ||
       (Math.abs(lat-29.0818)<0.025 && Math.abs(lon-(-95.1252))<0.025);
     if(isSanLuisPass) setFishingMode('surf');
+    lastConditionSnapshot=null;')+'([^a-z]|$)','i').test(text));
+    if(has(['san luis pass','surfside beach','galveston beach','bolivar peninsula','gulf of mexico','gulf coast','beach','ocean','gulf','surf','inlet','jetty','pier','estuary','tidal','saltwater','salt water','bay','harbor','harbour','ship channel']))return 'surf';
+    if(has(['lake','pond','reservoir','creek','river','stream','bayou','freshwater','fresh water','fishing pond']))return 'freshwater';
+    return null;
+  }
+  async function detectFishingMode(lat,lon,label,hint){
+    const named=classifyFishingLocationText((hint||'')+' '+(label||''));
+    if(named)return named;
+    try{
+      const url='https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&zoom=18&addressdetails=1';
+      const response=await fetch(url,{headers:{'Accept':'application/json'}});
+      if(!response.ok)throw Error('Reverse geocoding unavailable');
+      const place=await response.json(),a=place.address||{},feature=[place.category,place.type,place.addresstype,place.name,place.display_name,a.natural,a.water,a.waterway,a.leisure,a.amenity,a.landuse,a.place].filter(Boolean).join(' ').toLowerCase();
+      if(/\b(beach|sea|ocean|gulf|bay|strait|estuary|harbour|harbor|inlet|coast|tidal|salt|pier|jetty|marina|channel)\b/.test(feature))return 'surf';
+      if(/\b(lake|pond|reservoir|river|stream|creek|canal|waterfall|bayou)\b/.test(feature))return 'freshwater';
+    }catch(e){}
+    return null;
+  }
+  async function loadConditions(lat,lon,label,modeHint='') {
+    conditionCoords={lat,lon,label};
+    const detectedMode=await detectFishingMode(lat,lon,label,modeHint);
+    if(detectedMode){
+      setFishingMode(detectedMode);
+      conditionStatus.textContent='Location identified as '+(detectedMode==='surf'?'saltwater / coastal':'freshwater')+'. Loading conditions…';
+    }else{
+      conditionStatus.textContent='Could not identify whether this spot is freshwater or saltwater. Keeping the current mode; select it manually if needed.';
+    }
     lastConditionSnapshot=null;
     if(fishingMap)updateFishingMap(lat,lon,label);
     conditionStatus.textContent='Loading weather and marine conditions…';
@@ -1258,7 +1287,7 @@ on>
         {match:['kickerillo mischer preserve','kickerillo-mischer preserve','kickerillo mischer','kickerillo-mischer','kickerillo mischer park','kickerillo-mischer park'],lat:29.9871,lon:-95.5642,label:'Kickerillo-Mischer Preserve, Houston, Texas'}
       ];
       const known=aliases.find(a=>a.match.includes(normalized));
-      if(known){await loadConditions(known.lat,known.lon,known.label);return;}
+      if(known){await loadConditions(known.lat,known.lon,known.label,q);return;}
       const attempts=[q,q.replace(/,?\\s*(tx|texas)\\s*$/i,', Texas'),q.replace(/\\b(pass|beach|pier|jetty)\\b/ig,'').replace(/,?\\s*(tx|texas)\\s*$/i,', Texas')];
       let matches=[];
       for(const term of [...new Set(attempts.map(x=>x.trim()).filter(Boolean))]){
@@ -1271,7 +1300,7 @@ on>
       }
       if(matches.length){
         const p=matches.find(x=>/texas/i.test([x.admin1,x.admin2,x.country].join(' ')))||matches[0];
-        await loadConditions(p.latitude,p.longitude,[p.name,p.admin1,p.country].filter(Boolean).join(', '));
+        await loadConditions(p.latitude,p.longitude,[p.name,p.admin1,p.country].filter(Boolean).join(', '),q);
         return;
       }
       // OpenStreetMap/Nominatim fallback finds named parks, preserves, piers, beaches and other landmarks.
@@ -1283,7 +1312,7 @@ on>
       const texasLandmarks=(landmarks||[]).filter(p=>/texas/i.test([p.display_name,p.address?.state].join(' ')));
       if(!texasLandmarks.length)throw Error('Could not find that named place. Try adding “Texas” to its name, or use GPS while you are there.');
       const p=texasLandmarks[0];
-      await loadConditions(Number(p.lat),Number(p.lon),p.name||p.display_name.split(',')[0]+', Texas');
+      await loadConditions(Number(p.lat),Number(p.lon),p.name||p.display_name.split(',')[0]+', Texas',q);
     }catch(e){conditionStatus.textContent=e.message||'Could not find that location. Try a nearby town.';}
   }
   document.getElementById('conditionSearch').addEventListener('click',findConditionPlace);
