@@ -1065,42 +1065,43 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     setCondition('waterCurrentCaveat','This is a station prediction, not a live reading at your exact beach or pass. Current can vary across channels, guts, and shoreline structure. Check the station location before relying on it.');
   }
   async function loadUSGSWaterCurrent(lat,lon){
-    setCondition('waterCurrentIntro','Searching nearby USGS stream gauges for measured flow…');
+    setCondition('waterCurrentIntro','Searching nearby USGS monitoring locations for measured streamflow…');
     const deltaLat=0.35,deltaLon=0.45;
     const bbox=[lon-deltaLon,lat-deltaLat,lon+deltaLon,lat+deltaLat].join(',');
-    const siteUrl='https://waterservices.usgs.gov/nwis/site/?format=rdb&bBox='+encodeURIComponent(bbox)+'&siteType=ST&siteStatus=active&hasDataTypeCd=iv&parameterCd=00060';
-    const siteResponse=await fetch(siteUrl);
-    if(!siteResponse.ok)throw Error('USGS station search returned HTTP '+siteResponse.status);
-    const lines=(await siteResponse.text()).split(/\r?\n/).filter(x=>x&&!x.startsWith('#'));
-    const headerIndex=lines.findIndex(x=>x.startsWith('agency_cd\t'));
-    if(headerIndex<0)throw Error('USGS returned no nearby stream-gauge list.');
-    const headers=lines[headerIndex].split('\t');
-    const col=name=>headers.indexOf(name);
-    const candidates=lines.slice(headerIndex+2).map(line=>{const c=line.split('\t');return {site:c[col('site_no')],name:c[col('station_nm')],lat:Number(c[col('dec_lat_va')]),lon:Number(c[col('dec_long_va')])};})
-      .filter(x=>x.site&&Number.isFinite(x.lat)&&Number.isFinite(x.lon))
-      .map(x=>({...x,distance:milesBetween({lat,lon},{lat:x.lat,lon:x.lon})})).sort((a,b)=>a.distance-b.distance);
-    if(!candidates.length)throw Error('No active USGS stream gauge with flow data was found in the nearby search area.');
-    const station=candidates[0];
-    const ivUrl='https://waterservices.usgs.gov/nwis/iv/?format=json&sites='+encodeURIComponent(station.site)+'&parameterCd=00060,00065&period=PT6H';
-    const ivResponse=await fetch(ivUrl);
-    if(!ivResponse.ok)throw Error('USGS flow request returned HTTP '+ivResponse.status);
-    const iv=await ivResponse.json(),series=iv.value?.timeSeries||[];
-    const read=code=>{const ts=series.find(x=>x.variable?.variableCode?.some(v=>v.value===code));const values=ts?.values?.[0]?.value||[];const last=values.filter(v=>v.value!==''&&v.value!==null).slice(-1)[0];return last?{value:Number(last.value),time:last.dateTime}:null;};
-    const flow=read('00060'),height=read('00065');
-    if(!flow&&!height)throw Error('The nearest USGS station did not return a recent flow or gauge-height reading.');
-    setCondition('waterCurrentState',flow?flow.value.toLocaleString()+' cfs':'Not reported');
+    const url='https://api.waterdata.usgs.gov/ogcapi/v1/collections/latest-continuous/items?f=json&bbox='+encodeURIComponent(bbox)+'&parameter_code=00060,00065&limit=1000';
+    const response=await fetch(url);
+    if(!response.ok)throw Error('USGS latest-continuous service returned HTTP '+response.status);
+    const data=await response.json(),features=data.features||[];
+    const bySite=new Map();
+    features.forEach(feature=>{
+      const p=feature.properties||{},coords=feature.geometry?.coordinates||[];
+      if(!p.monitoring_location_id||!Number.isFinite(Number(coords[0]))||!Number.isFinite(Number(coords[1])))return;
+      const id=p.monitoring_location_id;
+      if(!bySite.has(id))bySite.set(id,{id,lon:Number(coords[0]),lat:Number(coords[1]),readings:{}});
+      const site=bySite.get(id),code=String(p.parameter_code||'');
+      if(code==='00060'||code==='00065'){
+        const old=site.readings[code];
+        if(!old||new Date(p.time)>new Date(old.time))site.readings[code]={value:Number(p.value),time:p.time,unit:p.unit_of_measure};
+      }
+    });
+    const candidates=[...bySite.values()].map(x=>({...x,distance:milesBetween({lat,lon},{lat:x.lat,lon:x.lon})}))
+      .filter(x=>x.distance<=35&&(x.readings['00060']||x.readings['00065']))
+      .sort((a,b)=>a.distance-b.distance);
+    if(!candidates.length)throw Error('No nearby USGS stream gauge with recent discharge or gauge-height data was found within about 35 miles.');
+    const station=candidates[0],flow=station.readings['00060'],height=station.readings['00065'];
+    if(!flow&&!height)throw Error('The nearest USGS station did not return a recent flow reading.');
+    setCondition('waterCurrentState',flow?Number(flow.value).toLocaleString()+' cfs':'Not reported');
     setCondition('waterCurrentStateLabel','Streamflow (volume)');
-    setCondition('waterCurrentSpeed',height?height.value.toFixed(2)+' ft':'Not reported');
+    setCondition('waterCurrentSpeed',height&&Number.isFinite(height.value)?height.value.toFixed(2)+' ft':'Not reported');
     setCondition('waterCurrentSpeedLabel','Gauge height');
     setCondition('waterCurrentDirection','Not measured');
     setCondition('waterCurrentNext','—');
     setCondition('waterCurrentNextLabel','Next update');
-    setCondition('waterCurrentIntro','USGS measured stream conditions · most recent available reading');
-    setCondition('waterCurrentStation',station.name+' · '+station.distance.toFixed(1)+' mi away · Gauge '+station.site+'.');
+    setCondition('waterCurrentIntro','USGS latest continuous measurements · automated gauge data');
+    setCondition('waterCurrentStation',station.id+' · '+station.distance.toFixed(1)+' mi away.');
     const stamp=flow?.time||height?.time;
     setCondition('waterCurrentCaveat','Streamflow is water volume passing the gauge, not current speed at your fishing bank. Gauge height is relative to that gauge’s reference, not lake depth. Latest reading: '+(stamp?new Date(stamp).toLocaleString():'time unavailable')+'. Lakes and ponds may have wind-driven movement without a nearby stream gauge.');
   }
-
   async function findConditionPlace() {
     const q=document.getElementById('conditionPlace').value.trim();
     if(!q){conditionStatus.textContent='Enter a fishing location first.';return;}
