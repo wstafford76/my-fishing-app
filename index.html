@@ -1348,8 +1348,8 @@ on>
     if(!tideResponse.ok)throw Error('NOAA tide service returned HTTP '+tideResponse.status);
     const tide=await tideResponse.json();
     if(tide.error)throw Error('NOAA station '+station.id+': '+(tide.error.message||'prediction error'));
-    const events=(tide.predictions||[]).map(x=>({...x,when:asUtc(x.t)})).filter(x=>x.when.toLocaleDateString('en-CA')===chosen).sort((a,b)=>a.when-b.when);
     const asUtc=t=>new Date(t.replace(' ','T')+'Z');
+    const events=(tide.predictions||[]).map(x=>({...x,when:asUtc(x.t)})).filter(x=>x.when.toLocaleDateString('en-CA')===chosen).sort((a,b)=>a.when-b.when);
     const localTime=d=>d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone});
     const eventLabel=x=>(x.type==='H'?'High':'Low')+' · '+localTime(x.when)+' · '+x.v+' ft';
     const card=x=>'<article class="stat"><strong>'+localTime(x.when)+'</strong><span>'+(x.type==='H'?'High tide':'Low tide')+' · '+x.v+' ft</span></article>';
