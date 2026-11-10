@@ -304,7 +304,12 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 </section>
 <section id="conditionsPanel" class="panel" hidden>
   <h2 style="color:var(--navy);margin:0">Fishing Conditions</h2>
-  <p style="color:var(--muted);margin:4px 0 12px">Live weather, marine conditions, and nearby tide predictions for your fishing spot.</p>
+  <p style="color:var(--muted);margin:4px 0 12px">Choose a fishing style to see the conditions that matter for that trip.</p>
+  <div class="conditions-location" role="group" aria-label="Fishing mode" style="margin:12px 0">
+    <button class="action" id="freshwaterMode" type="button" aria-pressed="true">Freshwater · Bass</button>
+    <button class="action secondary" id="surfMode" type="button" aria-pressed="false">Surf · Gulf Coast</button>
+  </div>
+  <p id="fishingModeNote" class="small-note">Freshwater mode: weather, pressure, daylight, and nearby water monitoring.</p>
   <div class="conditions-location">
     <input id="conditionPlace" type="search" placeholder="Enter a place (e.g. San Luis Pass, TX)" aria-label="Fishing location">
     <button class="action secondary" id="conditionSearch" type="button">Find location</button>
@@ -325,9 +330,11 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <article class="stat"><strong id="fcWind">—</strong><span>Max wind</span></article>
       <article class="stat"><strong id="fcWindDir">—</strong><span>Dominant wind (from)</span></article>
       <article class="stat"><strong id="fcGust">—</strong><span>Max gusts</span></article>
-      <article class="stat"><strong id="fcWave">—</strong><span>Max wave height</span></article>
-      <article class="stat"><strong id="fcWavePeriod">—</strong><span>Max wave period</span></article>
-      <article class="stat"><strong id="fcWaveDir">—</strong><span>Dominant wave direction</span></article>
+      <div id="forecastMarineFields" style="display:contents">
+        <article class="stat"><strong id="fcWave">—</strong><span>Max wave height</span></article>
+        <article class="stat"><strong id="fcWavePeriod">—</strong><span>Max wave period</span></article>
+        <article class="stat"><strong id="fcWaveDir">—</strong><span>Dominant wave direction</span></article>
+      </div>
     </div>
   </div>
   <div id="conditionResults" hidden>
@@ -341,6 +348,23 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <article class="stat"><strong id="wxHumidity">—</strong><span>Humidity</span></article>
       <article class="stat"><strong id="wxRain">—</strong><span>Precipitation</span></article>
     </div>
+    <div id="freshwaterConditions">
+      <h3 style="color:var(--navy);margin:20px 0 8px">Freshwater conditions</h3>
+      <div class="conditions-grid">
+        <article class="stat"><strong id="wxPressure">—</strong><span>Air pressure</span></article>
+        <article class="stat"><strong id="wxPressureTrend">—</strong><span>Pressure change · last 3 hours</span></article>
+        <article class="stat"><strong id="wxSunrise">—</strong><span>Sunrise</span></article>
+        <article class="stat"><strong id="wxSunset">—</strong><span>Sunset</span></article>
+      </div>
+      <p class="small-note">Water temperature and lake levels are not shown unless a nearby reliable monitoring station provides them. Weather pressure is not a direct measure of fish activity.</p>
+      <h4 style="color:var(--navy);margin:16px 0 6px">Local precipitation radar</h4>
+      <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden">
+        <iframe id="freshwaterRadar" title="Interactive precipitation radar" loading="lazy" style="display:block;width:100%;height:420px;border:0" src="about:blank"></iframe>
+      </div>
+      <p class="small-note">Radar is an interactive Windy map layer. Use it to track precipitation near your selected location.</p>
+      <p><a id="usgsWaterLink" href="https://waterdata.usgs.gov/nwis/rt" target="_blank" rel="noopener">Open USGS real-time water data</a> <span class="small-note">for nearby stream and lake monitoring sites, where available.</span></p>
+    </div>
+    <div id="surfConditions">
     <h3 style="color:var(--navy);margin:20px 0 8px">Marine conditions</h3>
     <div class="conditions-grid">
       <article class="stat"><strong id="seaWave">—</strong><span>Wave height</span></article>
@@ -364,6 +388,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <h4 style="color:var(--navy);margin:16px 0 6px">All tides throughout the day</h4>
     <div id="tideAllEvents" class="conditions-grid"></div>
     <p class="small-note">Weather and marine conditions are estimates for the selected coordinates. Tide predictions come from the nearest available NOAA station and may not represent conditions at your exact shoreline.</p>
+    </div>
   </div>
 </section>
 <section id="inventoryPanel" class="panel" hidden>
@@ -641,6 +666,22 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   const conditionStatus = document.getElementById('conditionStatus');
   const conditionResults = document.getElementById('conditionResults');
   let conditionCoords = null;
+  let fishingMode='freshwater';
+  function setFishingMode(mode){
+    fishingMode=mode;
+    const fresh=mode==='freshwater';
+    document.getElementById('freshwaterConditions').hidden=!fresh;
+    document.getElementById('surfConditions').hidden=fresh;
+    document.getElementById('freshwaterMode').className='action'+(fresh?'':' secondary');
+    document.getElementById('surfMode').className='action'+(!fresh?'':' secondary');
+    document.getElementById('freshwaterMode').setAttribute('aria-pressed',String(fresh));
+    document.getElementById('surfMode').setAttribute('aria-pressed',String(!fresh));
+    document.getElementById('forecastMarineFields').hidden=fresh;
+    document.getElementById('fishingModeNote').textContent=fresh?'Freshwater mode: weather, pressure, daylight, radar, and nearby water monitoring.':'Surf mode: marine conditions, Gulf satellite imagery, and NOAA tide predictions.';
+  }
+  document.getElementById('freshwaterMode').addEventListener('click',()=>setFishingMode('freshwater'));
+  document.getElementById('surfMode').addEventListener('click',()=>setFishingMode('surf'));
+  setFishingMode('freshwater');
   const setCondition = (id,value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
   const fmt = (v,unit,digits=0) => Number.isFinite(v) ? Number(v).toFixed(digits)+unit : '—';
   const compass = v => Number.isFinite(v) ? ['N','NE','E','SE','S','SW','W','NW'][Math.round((((v%360)+360)%360)/45)%8]+' ('+Math.round(v)+'°)' : '—';
@@ -649,7 +690,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     conditionStatus.textContent='Loading weather and marine conditions…';
     conditionResults.hidden=false;
     setCondition('conditionLocationName',label+' · '+lat.toFixed(3)+', '+lon.toFixed(3));
-    const weatherUrl='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto';
+    const weatherUrl='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,surface_pressure,pressure_msl&hourly=pressure_msl&daily=sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto';
     const marineUrl='https://marine-api.open-meteo.com/v1/marine?latitude='+lat+'&longitude='+lon+'&current=wave_height,wave_period,wave_direction,sea_surface_temperature&length_unit=imperial&temperature_unit=fahrenheit&timezone=auto';
     const results=await Promise.allSettled([fetch(weatherUrl).then(r=>{if(!r.ok)throw Error('Weather service unavailable');return r.json()}),fetch(marineUrl).then(r=>{if(!r.ok)throw Error('Marine service unavailable');return r.json()})]);
     if(results[0].status==='fulfilled'){
@@ -657,6 +698,16 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       setCondition('wxTemp',fmt(c.temperature_2m,'°F'));setCondition('wxFeels',fmt(c.apparent_temperature,'°F'));
       setCondition('wxWind',fmt(c.wind_speed_10m,' mph'));setCondition('wxWindDir',compass(c.wind_direction_10m));setCondition('wxGust',fmt(c.wind_gusts_10m,' mph'));
       setCondition('wxHumidity',fmt(c.relative_humidity_2m,'%'));setCondition('wxRain',fmt(c.precipitation,' in',2));
+      setCondition('wxPressure',fmt(c.pressure_msl,' hPa',0));
+      const hourly=results[0].value.hourly||{},times=hourly.time||[],pressures=hourly.pressure_msl||[];
+      const nowIndex=times.findIndex(t=>t===results[0].value.current.time?.slice(0,13)+':00');
+      const pNow=nowIndex>=0?pressures[nowIndex]:null,pThen=nowIndex>=3?pressures[nowIndex-3]:null;
+      setCondition('wxPressureTrend',Number.isFinite(pNow)&&Number.isFinite(pThen)?((pNow-pThen)>0?'+':'')+(pNow-pThen).toFixed(1)+' hPa':'Unavailable');
+      const daily=results[0].value.daily||{};
+      const clock=t=>t?new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'Unavailable';
+      setCondition('wxSunrise',clock(daily.sunrise?.[0]));setCondition('wxSunset',clock(daily.sunset?.[0]));
+      document.getElementById('freshwaterRadar').src='https://embed.windy.com/embed2.html?lat='+lat+'&lon='+lon+'&detailLat='+lat+'&detailLon='+lon+'&width=650&height=420&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&metricWind=mph&metricTemp=%C2%B0F';
+      document.getElementById('usgsWaterLink').href='https://waterdata.usgs.gov/nwis/rt?search_site_no=&search_site_type=lake,reservoir,stream&search_state=TX&search_station_nm=';
     } else {conditionStatus.textContent='Weather could not be loaded. '+results[0].reason.message;}
     if(results[1].status==='fulfilled'){
       const c=results[1].value.current||{};
@@ -664,7 +715,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       setCondition('seaDirection',fmt(c.wave_direction,'°'));setCondition('seaTemp',fmt(c.sea_surface_temperature,'°F'));
     } else {['seaWave','seaPeriod','seaDirection','seaTemp'].forEach(id=>setCondition(id,'Unavailable'));}
     conditionStatus.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.';
-    loadNearbyTides(lat,lon,document.getElementById('conditionDate').value).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
+    if(fishingMode==='surf')loadNearbyTides(lat,lon,document.getElementById('conditionDate').value).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
   }
   async function findConditionPlace() {
     const q=document.getElementById('conditionPlace').value.trim();
@@ -771,7 +822,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       setCondition('fcWindDir',compass(d.wind_direction_10m_dominant[wi]));
       setCondition('fcGust',fmt(d.wind_gusts_10m_max[wi],' mph'));
     } else ['fcTemp','fcRain','fcWind','fcWindDir','fcGust'].forEach(id=>setCondition(id,'Unavailable'));
-    if(mi>=0){
+    if(fishingMode==='surf'&&mi>=0){
       const d=results[1].value.daily;
       setCondition('fcWave',fmt(d.wave_height_max[mi],' ft',1));
       setCondition('fcWavePeriod',fmt(d.wave_period_max[mi],' sec',1));
