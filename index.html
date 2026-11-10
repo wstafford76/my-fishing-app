@@ -351,7 +351,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <h3 style="color:var(--navy);margin:20px 0 8px">Weather satellite · NOAA GOES-East</h3>
     <p class="small-note">Latest GeoColor satellite image for the Southern Plains, including Texas and the northwestern Gulf. Daytime imagery is true color; nighttime imagery uses infrared.</p>
     <div style="background:#eef2f6;border:1px solid var(--line);border-radius:12px;padding:10px">
-      <img id="weatherSatelliteImage" src="https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR/sp/GEOCOLOR/600x600.jpg" alt="Latest NOAA GOES-East GeoColor satellite image of the Southern Plains and Texas Gulf Coast" loading="lazy" style="display:block;width:100%;max-width:600px;height:auto;margin:0 auto;border-radius:8px">
+      <img id="weatherSatelliteImage" src="https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR/sp/GEOCOLOR/1800x1800.jpg" alt="Latest NOAA GOES-East GeoColor satellite image of the Southern Plains and Texas Gulf Coast" loading="lazy" style="display:block;width:100%;max-width:600px;height:auto;margin:0 auto;border-radius:8px">
       <p id="satelliteUpdated" class="small-note" style="text-align:center;margin:8px 0 4px">Satellite imagery provided by NOAA/NESDIS/STAR · refreshes every 5 minutes</p>
       <p style="text-align:center;margin:4px 0"><a href="https://www.star.nesdis.noaa.gov/GOES/sector_band.php?sat=G19&band=GEOCOLOR&length=36&sector=sp" target="_blank" rel="noopener">Open animated 3-hour satellite loop</a></p>
     </div>
@@ -642,9 +642,17 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   const conditionResults = document.getElementById('conditionResults');
   let conditionCoords = null;
   const satelliteImage=document.getElementById('weatherSatelliteImage');
+  if(satelliteImage){
+    satelliteImage.addEventListener('error',()=>{
+      satelliteImage.alt='NOAA satellite image could not be loaded. Open the NOAA satellite viewer below.';
+      satelliteImage.style.display='none';
+      setCondition('satelliteUpdated','Image unavailable from the direct feed. Use the NOAA animated satellite viewer link below.');
+    });
+    satelliteImage.addEventListener('load',()=>{satelliteImage.style.display='block';});
+  }
   function refreshSatellite(){
     if(!satelliteImage)return;
-    satelliteImage.src='https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR/sp/GEOCOLOR/600x600.jpg?t='+Date.now();
+    satelliteImage.src='https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR/sp/GEOCOLOR/1800x1800.jpg?t='+Date.now();
     setCondition('satelliteUpdated','Satellite image refreshed '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+' · NOAA/NESDIS/STAR');
   }
   refreshSatellite();
