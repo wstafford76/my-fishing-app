@@ -289,6 +289,12 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 <section id="inventoryPanel" class="panel" hidden>
   <h2 style="color:var(--navy);margin:0">Tackle Inventory</h2>
   <p style="color:var(--muted);margin:4px 0 10px">Your boxes, soft-bait bags, fishing line, and unassigned gear.</p>
+  <div class="inventory-tools">
+    <input id="invSearch" type="search" placeholder="Search item, brand, size, or compartment…" aria-label="Search inventory">
+    <select id="invCategory" aria-label="Filter inventory category">
+      <option value="all">All categories</option>
+    </select>
+  </div>
   <div class="stats">
     <div class="stat"><strong id="totalItems">0</strong><span>Inventory entries</span></div>
     <div class="stat"><strong id="boxCount">4</strong><span>Main tackle boxes</span></div>
@@ -305,12 +311,6 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <button type="button" class="storage-card" data-storage="KastKing Bag 2"><strong>KastKing Bag 2</strong><span>Saltwater / Minnow baits</span></button>
     <button type="button" class="storage-card" data-storage="Fishing Line &amp; Leaders"><strong>Fishing Line &amp; Leaders</strong><span>Spools and leaders</span></button>
     <button type="button" class="storage-card" data-storage="Unassigned"><strong>Unassigned</strong><span>Not placed in a box or bag</span></button>
-  </div>
-  <div class="inventory-tools">
-    <input id="invSearch" type="search" placeholder="Search item, brand, size, or compartment…" aria-label="Search inventory">
-    <select id="invCategory" aria-label="Filter inventory category">
-      <option value="all">All categories</option>
-    </select>
   </div>
   <div class="inventory-actions">
     <button class="action" id="addItem">+ Add item</button>
