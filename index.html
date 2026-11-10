@@ -822,16 +822,14 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     ];
     ideas.forEach(([title,body])=>{const el=document.createElement('article');el.className='stat';const strong=document.createElement('strong');strong.textContent=title;const span=document.createElement('span');span.textContent=body;el.append(strong,span);cards.append(el);});
     note.textContent='Searches are specific to '+place+'. Open a result to confirm its publication date, species, bait, and exact area.';
-    const sources=surf?[
-      ['Texas BiteCast · Coastal reports','https://www.texasbitecast.com/reports'],
-      ['San Luis Pass · Angler reports','https://captainexperiences.com/fishing-reports/locations/regions/san-luis-pass'],
-    ]:[
-      ['Texas Fishing Forum','https://texasfishingforum.com/forums/ubbthreads.php'],
-      ['BassResource · Fishing forums','https://www.bassresource.com/bass-fishing-forums/'],
-      ['Texas Fish Reports','https://www.texasfishreports.com/']
+    const terms=surf?'saltwater fishing report bait trout redfish drum':'freshwater fishing report bait bass crappie catfish';
+    const queries=[
+      ['Recent fishing reports',place+' '+terms+' latest fishing report'],
+      ['Angler reports & forums',place+' fishing report anglers bait'],
+      ['Bait shop reports',place+' bait shop fishing report']
     ];
-    sources.forEach(([title,url])=>{const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.className='action secondary';a.textContent=title;links.append(a);});
-    updated.textContent='Report sources for '+place+'. These links open established fishing-report publishers or angler forums directly. Check each report date and confirm the exact fishing area before relying on it.';
+    queries.forEach(([title,q])=>{const a=document.createElement('a');a.href='https://www.google.com/search?q='+encodeURIComponent(q)+'&tbs=qdr:m';a.target='_blank';a.rel='noopener noreferrer';a.className='action secondary';a.textContent=title;links.append(a);});
+    updated.textContent='Report searches prepared '+new Date().toLocaleString()+'. Results are refreshed by the search provider when opened; the app does not scrape or verify individual reports.';
   }
   // Fishing Conditions: GPS/manual place, Open-Meteo weather + marine, NOAA tide predictions.
   const conditionStatus = document.getElementById('conditionStatus');
