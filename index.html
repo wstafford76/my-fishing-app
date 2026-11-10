@@ -159,6 +159,13 @@ footer {
 }
 
 /* Inventory extension */
+.storage-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin:10px 0 18px}
+.storage-card{display:flex;flex-direction:column;gap:3px;text-align:left;padding:13px;background:#fff;border:1px solid var(--line);border-radius:12px;color:var(--navy);cursor:pointer;font:inherit}
+.storage-card strong{font-size:.98rem}
+.storage-card span{font-size:.78rem;color:var(--muted)}
+.storage-card.active{background:var(--navy);border-color:var(--navy);box-shadow:0 0 0 2px #f2c14e}
+.storage-card.active strong,.storage-card.active span{color:#fff}
+
 .main-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
 .main-tab{border:1px solid var(--line);background:#fff;color:var(--navy);padding:10px 16px;border-radius:10px;font:inherit;font-weight:750;cursor:pointer}
 .main-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
@@ -286,6 +293,18 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <div class="stat"><strong id="boxCount">4</strong><span>Main tackle boxes</span></div>
     <div class="stat"><strong id="bagCount">2</strong><span>Soft-bait bags</span></div>
   </div>
+  <h3 style="color:var(--navy);margin:18px 0 8px">Storage</h3>
+  <div id="storageFilters" class="storage-grid" aria-label="Filter inventory by storage">
+    <button type="button" class="storage-card active" data-storage="all"><strong>All storage</strong><span>Show every item</span></button>
+    <button type="button" class="storage-card" data-storage="Box 1"><strong>Box 1</strong><span>Main tackle box</span></button>
+    <button type="button" class="storage-card" data-storage="Box 2"><strong>Box 2</strong><span>Main tackle box</span></button>
+    <button type="button" class="storage-card" data-storage="Box 3"><strong>Box 3</strong><span>Main tackle box</span></button>
+    <button type="button" class="storage-card" data-storage="Box 4"><strong>Box 4</strong><span>Main tackle box</span></button>
+    <button type="button" class="storage-card" data-storage="KastKing Bag 1"><strong>KastKing Bag 1</strong><span>Freshwater / Bass</span></button>
+    <button type="button" class="storage-card" data-storage="KastKing Bag 2"><strong>KastKing Bag 2</strong><span>Saltwater / Minnow baits</span></button>
+    <button type="button" class="storage-card" data-storage="Fishing Line &amp; Leaders"><strong>Fishing Line &amp; Leaders</strong><span>Spools and leaders</span></button>
+    <button type="button" class="storage-card" data-storage="Unassigned"><strong>Unassigned</strong><span>Not placed in a box or bag</span></button>
+  </div>
   <div class="inventory-tools">
     <input id="invSearch" type="search" placeholder="Search item, brand, size, or compartment…" aria-label="Search inventory">
     <select id="invCategory" aria-label="Filter inventory category">
@@ -403,6 +422,13 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   const listEl = document.getElementById('inventoryList');
   const searchEl = document.getElementById('invSearch');
   const categoryEl = document.getElementById('invCategory');
+  const storageButtons = Array.from(document.querySelectorAll('.storage-card'));
+  let selectedStorage = 'all';
+  storageButtons.forEach(button => button.addEventListener('click', () => {
+    selectedStorage = button.dataset.storage || 'all';
+    storageButtons.forEach(b => b.classList.toggle('active', b === button));
+    renderInventory();
+  }));
   const totalEl = document.getElementById('totalItems');
   const dialog = document.createElement('dialog');
   dialog.innerHTML = `
@@ -442,7 +468,8 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     const cat = categoryEl.value;
     const filtered = inventory.map((item, index) => ({item,index})).filter(({item}) => {
       const text = Object.values(item).join(' ').toLowerCase();
-      return (!q || text.includes(q)) && (cat === 'all' || item.category === cat);
+      const storageMatches = selectedStorage === 'all' || (selectedStorage === 'Unassigned' ? (!item.box || item.box === 'Unassigned') : item.box === selectedStorage);
+      return storageMatches && (!q || text.includes(q)) && (cat === 'all' || item.category === cat);
     });
     totalEl.textContent = inventory.length;
     populateCategories();
