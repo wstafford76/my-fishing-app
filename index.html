@@ -389,21 +389,11 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <button class="action secondary" id="mapStreet" type="button" aria-pressed="false">Street map</button>
       <button class="action secondary" id="mapGPS" type="button">Center on my GPS</button>
       <button class="action" id="mapCurrentOverlay" type="button" aria-pressed="true">Current overlay: on</button>
-      <button class="action secondary" id="mapNoaaModel" type="button" aria-expanded="false" aria-controls="noaaModelPanel">NOAA model currents</button>
     </div>
     <div id="fishingMap" role="application" aria-label="Interactive fishing location map"></div>
     <p id="mapStatus" class="map-help" role="status">Loading map…</p>
     <div id="mapOverlayLegend" class="map-help" hidden><strong>Map overlay legend:</strong> Green circle = selected fishing spot · gold NOAA marker/arrow = station prediction only (not shoreline flow) · blue USGS marker = measured stream gauge location (flow volume only; no direction measurement). Unmapped water between points is unverified, not assumed still.</div>
-    <section id="noaaModelPanel" class="log-form" style="margin-top:12px" hidden>
-      <h3 style="color:var(--navy);margin:0 0 6px">NOAA Galveston Bay · Modeled currents</h3>
-      <p class="map-help">Official NGOFS2 model viewer. Choose the Currents map plots, then Nowcast or Forecast Guidance. The model includes San Luis Pass and shows area-wide modeled flow; it is not a live sensor reading and may not resolve every surf gut or sandbar.</p>
-      <div class="fishing-map-tools">
-        <a class="action" href="https://tidesandcurrents.noaa.gov/ofs/ngofs2/ngofs_galveston.html" target="_blank" rel="noopener noreferrer">Open NOAA model viewer</a>
-        <a class="action secondary" href="https://tidesandcurrents.noaa.gov/ofs/ngofs2/ngofs_info.html" target="_blank" rel="noopener noreferrer">Model details & limitations</a>
-      </div>
-      <iframe title="NOAA NGOFS2 Galveston Bay model viewer" src="https://tidesandcurrents.noaa.gov/ofs/ngofs2/ngofs_galveston.html" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:620px;border:1px solid var(--border,#d7e0e8);border-radius:12px;background:#fff"></iframe>
-      <p class="map-help">If NOAA prevents its viewer from displaying inside this app, use the Open NOAA model viewer link above. NOAA's operational model runs four times daily and provides nowcast and up-to-48-hour forecast guidance. <a href="https://tidesandcurrents.noaa.gov/ofs/ngofs2/ngofs_info.html" target="_blank" rel="noopener noreferrer">Read NOAA's model documentation</a>.</p>
-    </section>
+on>
   </div>
   <div class="conditions-location" style="margin-top:12px">
     <label for="conditionDate" style="font-weight:600;color:var(--navy)">Plan a trip date (forecast up to 16 days):</label>
@@ -981,12 +971,6 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   }
   document.getElementById('mapSatellite').addEventListener('click',()=>setMapLayer('satellite'));
   document.getElementById('mapStreet').addEventListener('click',()=>setMapLayer('street'));
-  document.getElementById('mapNoaaModel').addEventListener('click',()=>{
-    const panel=document.getElementById('noaaModelPanel'),button=document.getElementById('mapNoaaModel');
-    const opening=panel.hidden;panel.hidden=!opening;button.setAttribute('aria-expanded',String(opening));
-    button.className='action'+(opening?'':' secondary');
-    if(opening)panel.scrollIntoView({behavior:'smooth',block:'start'});
-  });
   document.getElementById('mapGPS').addEventListener('click',()=>{
     if(!navigator.geolocation){mapStatus.textContent='GPS is not available in this browser.';return;}
     mapStatus.textContent='Getting your GPS location…';
