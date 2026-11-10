@@ -242,6 +242,19 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
 /* Interactive fishing map */
 .fishing-map-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .current-direction-arrow{background:transparent;border:0}
+  .map-symbol-key{margin-top:10px;padding:10px 12px;border:1px solid var(--border,#d7e0e8);border-radius:12px;background:#fff;color:var(--navy,#13283f)}
+  .map-symbol-key summary{cursor:pointer;font-weight:700}
+  .map-key-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 16px;margin-top:12px}
+  .map-key-item{display:flex;align-items:center;gap:10px;font-size:13px;line-height:1.4;color:#53677c}
+  .map-key-item strong{color:var(--navy,#13283f)}
+  .map-key-symbol{flex:0 0 22px;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+  .map-key-pin{width:15px;height:15px;border-radius:50% 50% 50% 0;background:#3388ff;border:2px solid #fff;box-shadow:0 0 0 1px #2365ad;transform:rotate(-45deg);margin:0 4px}
+  .map-key-green{width:19px;height:19px;border:3px solid #16a34a;border-radius:50%;background:rgba(22,163,74,.12)}
+  .map-key-gold{width:16px;height:16px;border:3px solid #f59e0b;border-radius:50%;background:#fff}
+  .map-key-blue{width:16px;height:16px;border:3px solid #2563eb;border-radius:50%;background:#fff}
+  .map-key-arrow{color:#f59e0b;font-size:27px;font-weight:900;text-shadow:0 1px 2px #bbb}
+  .map-key-note{font-size:12px;color:#64778a;margin:12px 0 0}
+
 #fishingMap{height:360px;width:100%;border:1px solid var(--line);border-radius:12px;z-index:1;background:#dbe4e9}
 .map-help{font-size:.84rem;color:var(--muted);margin:6px 0}
 @media(max-width:560px){#fishingMap{height:330px}}
@@ -392,7 +405,17 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     </div>
     <div id="fishingMap" role="application" aria-label="Interactive fishing location map"></div>
     <p id="mapStatus" class="map-help" role="status">Loading map…</p>
-    <div id="mapOverlayLegend" class="map-help" hidden><strong>Map overlay legend:</strong> Green circle = selected fishing spot · gold NOAA marker/arrow = station prediction only (not shoreline flow) · blue USGS marker = measured stream gauge location (flow volume only; no direction measurement). Unmapped water between points is unverified, not assumed still.</div>
+    <details class="map-symbol-key" open>
+      <summary><strong>Map symbols &amp; key</strong></summary>
+      <div class="map-key-grid">
+        <div class="map-key-item"><span class="map-key-symbol map-key-pin"></span><span><strong>Blue pin</strong><br>Selected searched location; drag it to fine-tune your fishing spot.</span></div>
+        <div class="map-key-item"><span class="map-key-symbol map-key-green"></span><span><strong>Green circle</strong><br>Your exact selected fishing point.</span></div>
+        <div class="map-key-item"><span class="map-key-symbol map-key-gold"></span><span><strong>Gold circle</strong><br>NOAA tide/current prediction station location.</span></div>
+        <div class="map-key-item"><span class="map-key-symbol map-key-arrow">↑</span><span><strong>Gold arrow &amp; line</strong><br>Modeled current direction at the NOAA station, not verified flow along your shoreline.</span></div>
+        <div class="map-key-item"><span class="map-key-symbol map-key-blue"></span><span><strong>Blue circle</strong><br>USGS stream gauge; measured water level/flow data at that gauge, not necessarily at your spot.</span></div>
+      </div>
+      <p class="map-key-note">Station symbols appear only when the current overlay is on and data is available. Conditions between monitoring stations are not measured by these markers.</p>
+    </details>
   </div>
   <div class="conditions-location" style="margin-top:12px">
     <label for="conditionDate" style="font-weight:600;color:var(--navy)">Plan a trip date (forecast up to 16 days):</label>
