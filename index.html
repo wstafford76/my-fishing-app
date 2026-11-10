@@ -802,6 +802,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   });
   async function loadConditions(lat,lon,label) {
     conditionCoords={lat,lon,label};
+    lastConditionSnapshot=null;
     if(fishingMap)updateFishingMap(lat,lon,label);
     conditionStatus.textContent='Loading weather and marine conditions…';
     conditionResults.hidden=false;
