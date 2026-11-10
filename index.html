@@ -783,9 +783,21 @@ data-search="butchers bite bait lures artificial bait lure color selection water
         if(data.error)throw Error(data.reason||'Location search failed.');
         if(data.results&&data.results.length){matches=data.results;break;}
       }
-      if(!matches.length)throw Error('Could not find that spot. Try a nearby town, such as Freeport or Galveston.');
-      const p=matches.find(x=>/texas/i.test([x.admin1,x.admin2,x.country].join(' ')))||matches[0];
-      await loadConditions(p.latitude,p.longitude,[p.name,p.admin1,p.country].filter(Boolean).join(', '));
+      if(matches.length){
+        const p=matches.find(x=>/texas/i.test([x.admin1,x.admin2,x.country].join(' ')))||matches[0];
+        await loadConditions(p.latitude,p.longitude,[p.name,p.admin1,p.country].filter(Boolean).join(', '));
+        return;
+      }
+      // OpenStreetMap/Nominatim fallback finds named parks, preserves, piers, beaches and other landmarks.
+      const landmarkQuery=encodeURIComponent(q+', Texas, USA');
+      const landmarkUrl='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&addressdetails=1&countrycodes=us&q='+landmarkQuery;
+      const landmarkResponse=await fetch(landmarkUrl,{headers:{'Accept':'application/json'}});
+      if(!landmarkResponse.ok)throw Error('The landmark search service is temporarily unavailable. Try again or use GPS.');
+      const landmarks=await landmarkResponse.json();
+      const texasLandmarks=(landmarks||[]).filter(p=>/texas/i.test([p.display_name,p.address?.state].join(' ')));
+      if(!texasLandmarks.length)throw Error('Could not find that named place. Try adding “Texas” to its name, or use GPS while you are there.');
+      const p=texasLandmarks[0];
+      await loadConditions(Number(p.lat),Number(p.lon),p.name||p.display_name.split(',')[0]+', Texas');
     }catch(e){conditionStatus.textContent=e.message||'Could not find that location. Try a nearby town.';}
   }
   document.getElementById('conditionSearch').addEventListener('click',findConditionPlace);
