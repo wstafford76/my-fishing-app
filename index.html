@@ -680,14 +680,15 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     const station=stations.filter(x=>Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lng))).sort((a,b)=>distance({lat, lng:lon},{lat:Number(a.lat),lng:Number(a.lng)})-distance({lat,lng:lon},{lat:Number(b.lat),lng:Number(b.lng)}))[0];
     if(!station)throw Error('No nearby station found');
     setCondition('tideStation','Nearest station: '+station.name+' ('+distance({lat,lng:lon},{lat:Number(station.lat),lng:Number(station.lng)}).toFixed(1)+' mi away)');
-    const now=new Date(),start=new Date(now.getTime()-6*3600000),end=new Date(now.getTime()+48*3600000);
-    // Use NOAA's most compatible date-only format; include complete UTC calendar days.
-    const stamp=d=>d.toISOString().slice(0,10).replace(/-/g,'');
-    const url='https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=MyFishingReference&begin_date='+stamp(start)+'&end_date='+stamp(end)+'&datum=MLLW&station='+station.id+'&time_zone=gmt&units=english&interval=hilo&format=json';
+    const now=new Date(),start=new Date(now.getTime()-6*3600000);
+    // NOAA explicitly supports begin_date + range (hours); avoid end_date parsing failures.
+    const begin=start.toISOString().slice(0,10).replace(/-/g,'');
+    const params=new URLSearchParams({product:'predictions',application:'MyFishingReference',begin_date:begin,range:'48',datum:'MLLW',station:String(station.id),time_zone:'gmt',units:'english',interval:'hilo',format:'json'});
+    const url='https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?'+params.toString();
     const tideResponse=await fetch(url);
     if(!tideResponse.ok)throw Error('NOAA tide service returned HTTP '+tideResponse.status);
     const tide=await tideResponse.json();
-    if(tide.error)throw Error(tide.error.message||'NOAA prediction error');
+    if(tide.error)throw Error('NOAA station '+station.id+': '+(tide.error.message||'prediction error'));
     const events=tide.predictions||[];
     const asUtc=t=>new Date(t.replace(' ','T')+'Z');
     const high=events.find(x=>x.type==='H'&&asUtc(x.t)>now),low=events.find(x=>x.type==='L'&&asUtc(x.t)>now);
