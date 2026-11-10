@@ -352,6 +352,13 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       </div>
     </div>
   </div>
+  <div class="log-form" style="margin-top:16px">
+    <h3 style="color:var(--navy);margin:0 0 6px">Best Fishing Windows</h3>
+    <p class="small-note">Ranked time periods for your selected location and trip date. Scores compare forecast conditions; they are not a prediction or guarantee of bites.</p>
+    <button class="action" id="bestWindowsButton" type="button">Find best fishing windows</button>
+    <div id="bestWindowsStatus" class="small-note" role="status">Load a location and choose a trip date, then find your best windows.</div>
+    <div id="bestWindowsResults" hidden></div>
+  </div>
   <div id="conditionResults" hidden>
     <h3 id="conditionLocationName" style="color:var(--navy)"></h3>
     <div class="conditions-grid">
@@ -869,6 +876,49 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     status.textContent='Forecast updated. Forecasts are estimates and can change as the trip date approaches.';
     if(fishingMode==='surf')loadNearbyTides(lat,lon,selected).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
   }
+  async function calculateBestWindows(){
+    const status=document.getElementById('bestWindowsStatus'),out=document.getElementById('bestWindowsResults');
+    if(!conditionCoords){status.textContent='Find a fishing location or use GPS first.';return;}
+    const selected=conditionDate.value||localDate(new Date()),{lat,lon}=conditionCoords;
+    status.textContent='Comparing hourly weather'+(fishingMode==='surf'?' and marine conditions':' and pressure')+'…';out.hidden=true;
+    try{
+      const hourly='temperature_2m,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,pressure_msl';
+      const wUrl='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&hourly='+hourly+'&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&forecast_days=16&timezone=auto';
+      const mUrl='https://marine-api.open-meteo.com/v1/marine?latitude='+lat+'&longitude='+lon+'&hourly=wave_height,wave_period&length_unit=imperial&forecast_days=16&timezone=auto&cell_selection=sea';
+      const settled=await Promise.allSettled([fetch(wUrl).then(r=>{if(!r.ok)throw Error('Weather forecast unavailable');return r.json()}),fishingMode==='surf'?fetch(mUrl).then(r=>{if(!r.ok)throw Error('Marine forecast unavailable');return r.json()}):Promise.resolve(null)]);
+      if(settled[0].status!=='fulfilled')throw settled[0].reason;
+      const weather=settled[0].value.hourly,marine=settled[1].status==='fulfilled'&&settled[1].value?settled[1].value.hourly:null;
+      const pressureTrend=weather.pressure_msl;
+      const rows=[];
+      for(let i=0;i<weather.time.length;i++){
+        if(!weather.time[i].startsWith(selected))continue;
+        const hour=Number(weather.time[i].slice(11,13));if(hour<4||hour>20)continue;
+        const val=(a)=>Number.isFinite(a?.[i])?a[i]:null;
+        let score=50,reasons=[],risks=[];
+        const wind=val(weather.wind_speed_10m),gust=val(weather.wind_gusts_10m),rain=val(weather.precipitation_probability),temp=val(weather.temperature_2m),pressure=val(weather.pressure_msl);
+        if(wind!==null){const good=fishingMode==='surf'?(wind<=12?12:wind<=17?5:wind<=22?-8:-18):(wind<=8?12:wind<=12?5:wind<=18?-8:-15);score+=good;reasons.push('Wind '+Math.round(wind)+' mph '+(good>=5?'is favorable':'is a limiting factor'));}
+        if(gust!==null&&gust>=20){score-=10;risks.push('Gusts near '+Math.round(gust)+' mph');}
+        if(rain!==null){score+=rain<=20?5:rain<=50?0:-8;if(rain>50)risks.push('Rain chance '+Math.round(rain)+'%');}
+        if(temp!==null){if(temp>=55&&temp<=82)score+=4;else if(temp<40||temp>92)score-=5;}
+        if(pressureTrend&&i>0&&Number.isFinite(pressureTrend[i-1])&&pressure!==null){const delta=pressure-pressureTrend[i-1];if(delta>=0.5){score+=4;reasons.push('Pressure rising');}else if(delta<=-0.7){score-=3;risks.push('Pressure falling');}}
+        if(fishingMode==='surf'&&marine){
+          const wave=val(marine.wave_height),period=val(marine.wave_period);
+          if(wave!==null){const w=wave<=2?10:wave<=3.5?3:wave<=5?-10:-18;score+=w;reasons.push('Waves '+wave.toFixed(1)+' ft');if(w<0)risks.push('Rough surf');}
+          if(period!==null&&period>=7&&period<=11)score+=3;
+        }
+        rows.push({hour,score:Math.max(0,Math.min(100,Math.round(score))),reasons,risks});
+      }
+      const windows=[];
+      for(let i=0;i<rows.length;){let j=i+1;while(j<rows.length&&rows[j].hour===rows[j-1].hour+1)j++;for(let k=i;k+1<j;k+=2){const pair=rows.slice(k,Math.min(k+2,j));if(pair.length<2)continue;windows.push({start:pair[0].hour,end:pair[1].hour+1,score:Math.round(pair.reduce((s,z)=>s+z.score,0)/pair.length),reasons:[...new Set(pair.flatMap(z=>z.reasons))],risks:[...new Set(pair.flatMap(z=>z.risks))]});}i=j;}
+      windows.sort((a,b)=>b.score-a.score);
+      if(!windows.length){status.textContent='No hourly forecast data was returned for that date.';return;}
+      const fmtHour=h=>new Date(selected+'T'+String(h).padStart(2,'0')+':00:00').toLocaleTimeString([],{hour:'numeric'});
+      const confidence=selected===localDate(new Date())?'Moderate':'Low to moderate';
+      out.innerHTML='<h4 style="color:var(--navy);margin:14px 0 8px">Top time windows · '+new Date(selected+'T12:00:00').toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'})+'</h4>'+windows.slice(0,4).map((w,n)=>'<article class="stat" style="margin:8px 0"><strong>'+(n+1)+'. '+fmtHour(w.start)+'–'+fmtHour(w.end)+' · '+w.score+'/100</strong><span>'+(w.reasons.join(' · ')||'Mixed conditions')+(w.risks.length?' · Watch: '+w.risks.join(', '):'')+'</span></article>').join('')+'<p class="small-note">Confidence: '+confidence+'. Based on hourly Open-Meteo forecast inputs'+(fishingMode==='surf'?(marine?' and modeled marine wave data.':'; marine model data unavailable for this location.'):'; pressure trend is a weather indicator, not a direct fish-activity measure.')+' Tide timing is not included in this first scoring pass. Scores are relative condition rankings, not catch probabilities.</p>';
+      out.hidden=false;status.textContent='Ranking complete. Recheck closer to your trip as forecasts change.';
+    }catch(e){status.textContent='Could not calculate fishing windows: '+(e.message||'forecast unavailable');}
+  }
+  document.getElementById('bestWindowsButton').addEventListener('click',calculateBestWindows);
   document.getElementById('conditionForecast').addEventListener('click',loadTripForecast);
   conditionDate.addEventListener('change',()=>{
     const d=conditionDate.value?new Date(conditionDate.value+'T12:00:00'):new Date();
