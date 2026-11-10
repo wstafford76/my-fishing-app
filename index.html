@@ -1284,7 +1284,7 @@ on>
       ];
       const known=aliases.find(a=>a.match.includes(normalized));
       if(known){await loadConditions(known.lat,known.lon,known.label,q);return;}
-      const attempts=[q,q.replace(/,?\\s*(tx|texas)\\s*$/i,', Texas'),q.replace(/\\b(pass|beach|pier|jetty)\\b/ig,'').replace(/,?\\s*(tx|texas)\\s*$/i,', Texas')];
+      const attempts=[q,q+', USA'];
       let matches=[];
       for(const term of [...new Set(attempts.map(x=>x.trim()).filter(Boolean))]){
         const url='https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(term)+'&count=10&countryCode=US&language=en&format=json';
@@ -1295,12 +1295,12 @@ on>
         if(data.results&&data.results.length){matches=data.results;break;}
       }
       if(matches.length){
-        const p=matches.find(x=>/texas/i.test([x.admin1,x.admin2,x.country].join(' ')))||matches[0];
+        const stateMatch=q.match(/,\\s*([a-z ]+)\\s*$/i);const requestedState=stateMatch&&stateMatch[1].length>2?stateMatch[1].trim().toLowerCase():null;const p=(requestedState&&matches.find(x=>String(x.admin1||'').toLowerCase()===requestedState))||matches[0];
         await loadConditions(p.latitude,p.longitude,[p.name,p.admin1,p.country].filter(Boolean).join(', '),q);
         return;
       }
       // OpenStreetMap/Nominatim fallback finds named parks, preserves, piers, beaches and other landmarks.
-      const landmarkQuery=encodeURIComponent(q+', Texas, USA');
+      const landmarkQuery=encodeURIComponent(q+', USA');
       const landmarkUrl='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&addressdetails=1&countrycodes=us&q='+landmarkQuery;
       const landmarkResponse=await fetch(landmarkUrl,{headers:{'Accept':'application/json'}});
       if(!landmarkResponse.ok)throw Error('The landmark search service is temporarily unavailable. Try again or use GPS.');
