@@ -328,6 +328,12 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 <section id="conditionsPanel" class="panel" hidden>
   <h2 style="color:var(--navy);margin:0">Fishing Conditions</h2>
   <p style="color:var(--muted);margin:4px 0 12px">Choose a fishing style to see the conditions that matter for that trip.</p>
+  <div class="conditions-location" style="margin:12px 0">
+    <input id="conditionPlace" type="search" placeholder="Enter a place (e.g. San Luis Pass, TX)" aria-label="Fishing location">
+    <button class="action secondary" id="conditionSearch" type="button">Find location</button>
+    <button class="action" id="conditionGPS" type="button">Use my GPS</button>
+  </div>
+  <div id="conditionStatus" class="small-note" role="status">Choose a fishing location or use your phone's GPS to load conditions.</div>
   <div class="conditions-location" role="group" aria-label="Fishing mode" style="margin:12px 0">
     <button class="action" id="freshwaterMode" type="button" aria-pressed="true">Freshwater · Bass</button>
     <button class="action secondary" id="surfMode" type="button" aria-pressed="false">Surf · Gulf Coast</button>
@@ -344,12 +350,6 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <div id="fishingMap" role="application" aria-label="Interactive fishing location map"></div>
     <p id="mapStatus" class="map-help" role="status">Loading map…</p>
   </div>
-  <div class="conditions-location">
-    <input id="conditionPlace" type="search" placeholder="Enter a place (e.g. San Luis Pass, TX)" aria-label="Fishing location">
-    <button class="action secondary" id="conditionSearch" type="button">Find location</button>
-    <button class="action" id="conditionGPS" type="button">Use my GPS</button>
-  </div>
-  <div id="conditionStatus" class="small-note" role="status">Choose a fishing location or use your phone's GPS to load conditions.</div>
   <div class="conditions-location" style="margin-top:12px">
     <label for="conditionDate" style="font-weight:600;color:var(--navy)">Plan a trip date (forecast up to 16 days):</label>
     <input id="conditionDate" type="date" aria-label="Trip date">
