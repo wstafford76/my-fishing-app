@@ -209,6 +209,7 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
 .form-grid input,.form-grid textarea,.form-grid select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit;color:var(--ink)}
 .form-grid .wide{grid-column:1/-1}
 .conditions-location{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;margin:12px 0}
+.fishing-mode-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}.fishing-mode-buttons>*{width:100%;min-width:0}
 .conditions-location input{min-width:0;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit}
 .conditions-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:10px 0}
 .location-dashboard{margin:14px 0 18px;padding:14px;background:linear-gradient(145deg,#10243a,#1c4262);border:1px solid #d5b04a;border-radius:18px;color:#fff;box-shadow:0 10px 24px #10243a18}
@@ -372,7 +373,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <button class="action" id="conditionGPS" type="button">Use my GPS</button>
   </div>
   <div id="conditionStatus" class="small-note" role="status">Choose a fishing location or use your phone's GPS to load conditions.</div>
-  <div class="conditions-location" role="group" aria-label="Fishing mode" style="margin:12px 0">
+  <div class="conditions-location fishing-mode-buttons" role="group" aria-label="Fishing mode" style="margin:12px 0">
     <button class="action" id="freshwaterMode" type="button" aria-pressed="true">Freshwater</button>
     <button class="action secondary" id="surfMode" type="button" aria-pressed="false">Surf · Gulf Coast</button>
   </div>
