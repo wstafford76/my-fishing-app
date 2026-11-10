@@ -211,6 +211,30 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
 .conditions-location{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;margin:12px 0}
 .conditions-location input{min-width:0;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit}
 .conditions-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:10px 0}
+.location-dashboard{margin:14px 0 18px;padding:14px;background:linear-gradient(145deg,#10243a,#1c4262);border:1px solid #d5b04a;border-radius:18px;color:#fff;box-shadow:0 10px 24px #10243a18}
+.location-dashboard[hidden]{display:none}
+.dashboard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.dashboard-kicker{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#f2c14e;font-weight:800}
+.dashboard-place{font-size:1.25rem;font-weight:800;margin:2px 0;color:#fff}
+.dashboard-updated{font-size:.76rem;color:#d8e2eb}
+.dashboard-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+.dashboard-metric{background:#ffffff12;border:1px solid #ffffff24;border-radius:12px;padding:10px;min-width:0}
+.dashboard-metric strong{display:block;font-size:1.2rem;color:#fff;white-space:nowrap}
+.dashboard-metric span{font-size:.72rem;color:#d8e2eb}
+.dashboard-section-title{font-size:.82rem;letter-spacing:.08em;text-transform:uppercase;color:#f2c14e;font-weight:800;margin:16px 0 8px}
+.hourly-strip{display:grid;grid-auto-columns:minmax(82px,1fr);grid-auto-flow:column;gap:7px;overflow-x:auto;padding:2px 0 8px;scroll-snap-type:x proximity}
+.hour-card{background:#ffffff12;border:1px solid #ffffff24;border-radius:12px;padding:9px 7px;text-align:center;scroll-snap-align:start}
+.hour-card .hour-time{font-size:.72rem;color:#d8e2eb}
+.hour-card .hour-icon{font-size:1.35rem;margin:4px 0}
+.hour-card strong{display:block;color:#fff;font-size:1rem}
+.hour-card small{display:block;color:#d8e2eb;font-size:.68rem;margin-top:3px}
+.dashboard-pressure{background:#ffffff12;border:1px solid #ffffff24;border-radius:12px;padding:10px}
+.dashboard-pressure svg{display:block;width:100%;height:82px;overflow:visible}
+.dashboard-pressure-note{font-size:.75rem;color:#d8e2eb;margin-top:4px}
+.dashboard-daylight{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px}
+.dashboard-daylight span{font-size:.8rem;color:#e6edf3}
+.dashboard-daylight strong{color:#fff}
+@media(max-width:420px){.dashboard-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.conditions-location{grid-template-columns:1fr 1fr}.conditions-location input{grid-column:1/-1}}
 @media(max-width:560px){.inventory-tools{grid-template-columns:1fr}.inventory-item{grid-template-columns:1fr}.item-buttons{justify-content:flex-end}.form-grid{grid-template-columns:1fr}}
 
@@ -339,6 +363,23 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <button class="action secondary" id="surfMode" type="button" aria-pressed="false">Surf · Gulf Coast</button>
   </div>
   <p id="fishingModeNote" class="small-note">Freshwater mode: weather, pressure, daylight, and nearby water monitoring.</p>
+  <section id="locationDashboard" class="location-dashboard" aria-label="Fishing weather dashboard" hidden>
+    <div class="dashboard-top">
+      <div><div class="dashboard-kicker">Field conditions</div><div id="dashboardPlace" class="dashboard-place">Selected location</div></div>
+      <div id="dashboardUpdated" class="dashboard-updated">Waiting for conditions</div>
+    </div>
+    <div class="dashboard-metrics">
+      <div class="dashboard-metric"><strong id="dashTemp">—</strong><span>Air temperature</span></div>
+      <div class="dashboard-metric"><strong id="dashWind">—</strong><span>Wind · gust</span></div>
+      <div class="dashboard-metric"><strong id="dashPressure">—</strong><span>Pressure</span></div>
+      <div class="dashboard-metric"><strong id="dashRain">—</strong><span>Precipitation</span></div>
+    </div>
+    <div class="dashboard-section-title">Hourly outlook</div>
+    <div id="dashboardHourly" class="hourly-strip" aria-label="Hourly weather forecast"></div>
+    <div class="dashboard-section-title">Pressure movement · last 24 hours</div>
+    <div class="dashboard-pressure"><svg id="dashboardPressureChart" viewBox="0 0 320 82" role="img" aria-label="Barometric pressure trend"></svg><div id="dashboardPressureNote" class="dashboard-pressure-note">Pressure history will appear when available.</div></div>
+    <div class="dashboard-daylight"><span>☀ Sunrise <strong id="dashSunrise">—</strong></span><span>☀ Sunset <strong id="dashSunset">—</strong></span></div>
+  </section>
   <div class="log-form" style="margin:14px 0">
     <h3 style="color:var(--navy);margin:0 0 4px">Fishing Map</h3>
     <p class="map-help">Tap any pond, shoreline, beach, or other spot on the map to load conditions for that exact point.</p>
@@ -868,7 +909,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     conditionStatus.textContent='Loading weather and marine conditions…';
     conditionResults.hidden=false;
     setCondition('conditionLocationName',label+' · '+lat.toFixed(3)+', '+lon.toFixed(3));
-    const weatherUrl='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,surface_pressure,pressure_msl&hourly=pressure_msl&daily=sunrise,sunset&past_days=1&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto';
+    const weatherUrl='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,surface_pressure,pressure_msl&hourly=temperature_2m,precipitation_probability,wind_speed_10m,wind_gusts_10m,pressure_msl,weather_code&daily=sunrise,sunset&past_days=1&forecast_days=2&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto';
     const marineUrl='https://marine-api.open-meteo.com/v1/marine?latitude='+lat+'&longitude='+lon+'&current=wave_height,wave_period,wave_direction,sea_surface_temperature&length_unit=imperial&temperature_unit=fahrenheit&timezone=auto';
     const results=await Promise.allSettled([fetch(weatherUrl).then(r=>{if(!r.ok)throw Error('Weather service unavailable');return r.json()}),fetch(marineUrl).then(r=>{if(!r.ok)throw Error('Marine service unavailable');return r.json()})]);
     if(results[0].status==='fulfilled'){
@@ -877,6 +918,13 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       setCondition('wxWind',fmt(c.wind_speed_10m,' mph'));setCondition('wxWindDir',compass(c.wind_direction_10m));setCondition('wxGust',fmt(c.wind_gusts_10m,' mph'));
       setCondition('wxHumidity',fmt(c.relative_humidity_2m,'%'));setCondition('wxRain',fmt(c.precipitation,' in',2));
       setCondition('wxPressure',fmt(c.pressure_msl,' hPa',0));
+      document.getElementById('locationDashboard').hidden=false;
+      setCondition('dashboardPlace',label);
+      setCondition('dashboardUpdated','Updated '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}));
+      setCondition('dashTemp',fmt(c.temperature_2m,'°F'));
+      setCondition('dashWind',fmt(c.wind_speed_10m,' mph')+' · '+fmt(c.wind_gusts_10m,' mph'));
+      setCondition('dashPressure',fmt(c.pressure_msl,' hPa',0));
+      setCondition('dashRain',fmt(c.precipitation,' in',2));
       const hourly=results[0].value.hourly||{},times=hourly.time||[],pressures=hourly.pressure_msl||[];
       const nowIndex=times.findIndex(t=>t===results[0].value.current.time?.slice(0,13)+':00');
       const pNow=nowIndex>=0?pressures[nowIndex]:null,pThen=nowIndex>=3?pressures[nowIndex-3]:null;
@@ -891,6 +939,26 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       const daily=results[0].value.daily||{};
       const clock=t=>t?new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'Unavailable';
       setCondition('wxSunrise',clock(daily.sunrise?.[0]));setCondition('wxSunset',clock(daily.sunset?.[0]));
+      setCondition('dashSunrise',clock(daily.sunrise?.[0]));setCondition('dashSunset',clock(daily.sunset?.[0]));
+      const localNow=results[0].value.current?.time||'';
+      const startAt=Math.max(0,times.findIndex(t=>t>=localNow.slice(0,13)+':00'));
+      const iconFor=code=>code===0?'☀️':code<=2?'🌤️':code<=3?'☁️':code<=48?'🌫️':code<=67?'🌧️':code<=77?'❄️':code<=82?'🌦️':code<=86?'🌨️':code<=99?'⛈️':'•';
+      const hourHtml=[];
+      for(let k=startAt;k<Math.min(times.length,startAt+10);k++){
+        const hourLabel=new Date(times[k]).toLocaleTimeString([],{hour:'numeric'});
+        const temp=hourly.temperature_2m?.[k],rain=hourly.precipitation_probability?.[k],wind=hourly.wind_speed_10m?.[k],gust=hourly.wind_gusts_10m?.[k],code=hourly.weather_code?.[k];
+        hourHtml.push('<div class="hour-card"><div class="hour-time">'+hourLabel+'</div><div class="hour-icon">'+iconFor(code)+'</div><strong>'+(Number.isFinite(temp)?Math.round(temp)+'°':'—')+'</strong><small>'+(Number.isFinite(rain)?Math.round(rain)+'% rain':'')+'</small><small>'+(Number.isFinite(wind)?Math.round(wind)+' mph':'—')+(Number.isFinite(gust)?' · '+Math.round(gust)+'g':'')+'</small></div>');
+      }
+      document.getElementById('dashboardHourly').innerHTML=hourHtml.join('')||'<div class="hour-card">Hourly outlook unavailable</div>';
+      const pressurePoints=times.map((t,k)=>({t,v:pressures[k]})).filter(p=>p.t<=localNow&&p.t>=new Date(new Date(localNow).getTime()-24*3600000).toISOString().slice(0,13)+':00'&&Number.isFinite(p.v));
+      const chart=document.getElementById('dashboardPressureChart');
+      if(pressurePoints.length>1){
+        const vals=pressurePoints.map(p=>p.v),lo=Math.min(...vals)-0.5,hi=Math.max(...vals)+0.5;
+        const coords=vals.map((v,k)=>({x:8+k*304/(vals.length-1),y:70-(v-lo)/(hi-lo)*58}));
+        const path=coords.map((p,k)=>(k?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
+        chart.innerHTML='<path d="'+path+'" fill="none" stroke="#f2c14e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'+coords.filter((p,k)=>k===0||k===coords.length-1).map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="#fff" stroke="#f2c14e" stroke-width="2"/>').join('');
+        setCondition('dashboardPressureNote',pressurePoints[0].v.toFixed(1)+' → '+pressurePoints[pressurePoints.length-1].v.toFixed(1)+' hPa · '+(pressurePoints[pressurePoints.length-1].v-pressurePoints[0].v>=0?'+':'')+(pressurePoints[pressurePoints.length-1].v-pressurePoints[0].v).toFixed(1)+' hPa over the available period');
+      }else{chart.innerHTML='';setCondition('dashboardPressureNote','Not enough hourly pressure readings to draw a trend yet.');}
       document.getElementById('freshwaterRadar').src='https://embed.windy.com/embed2.html?lat='+lat+'&lon='+lon+'&detailLat='+lat+'&detailLon='+lon+'&width=650&height=420&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&metricWind=mph&metricTemp=%C2%B0F';
       document.getElementById('usgsWaterLink').href='https://waterdata.usgs.gov/nwis/rt?search_site_no=&search_site_type=lake,reservoir,stream&search_state=TX&search_station_nm=';
     } else {conditionStatus.textContent='Weather could not be loaded. '+results[0].reason.message;}
