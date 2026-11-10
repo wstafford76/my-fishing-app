@@ -681,13 +681,17 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     if(!station)throw Error('No nearby station found');
     setCondition('tideStation','Nearest station: '+station.name+' ('+distance({lat,lng:lon},{lat:Number(station.lat),lng:Number(station.lng)}).toFixed(1)+' mi away)');
     const now=new Date(),start=new Date(now.getTime()-6*3600000),end=new Date(now.getTime()+36*3600000);
-    const stamp=d=>d.toISOString().replace(/[-:TZ]/g,'').slice(0,12);
-    const url='https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=MyFishingReference&begin_date='+stamp(start)+'&end_date='+stamp(end)+'&datum=MLLW&station='+station.id+'&time_zone=lst_ldt&units=english&interval=hilo&format=json';
-    const tide=await fetch(url).then(r=>r.json());
+    // NOAA requires YYYYMMDD HH:mm. Request GMT to avoid station-local/DST ambiguity.
+    const stamp=d=>d.toISOString().slice(0,10).replace(/-/g,'')+' '+d.toISOString().slice(11,16);
+    const url='https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=MyFishingReference&begin_date='+encodeURIComponent(stamp(start))+'&end_date='+encodeURIComponent(stamp(end))+'&datum=MLLW&station='+station.id+'&time_zone=gmt&units=english&interval=hilo&format=json';
+    const tideResponse=await fetch(url);
+    if(!tideResponse.ok)throw Error('NOAA tide service returned HTTP '+tideResponse.status);
+    const tide=await tideResponse.json();
     if(tide.error)throw Error(tide.error.message||'NOAA prediction error');
     const events=tide.predictions||[];
-    const high=events.find(x=>x.type==='H'&&new Date(x.t)>now),low=events.find(x=>x.type==='L'&&new Date(x.t)>now);
-    const display=x=>x?new Date(x.t.replace(' ','T')+'-05:00').toLocaleString([], {weekday:'short',hour:'numeric',minute:'2-digit'})+' · '+x.v+' ft':'Not available';
+    const asUtc=t=>new Date(t.replace(' ','T')+'Z');
+    const high=events.find(x=>x.type==='H'&&asUtc(x.t)>now),low=events.find(x=>x.type==='L'&&asUtc(x.t)>now);
+    const display=x=>x?asUtc(x.t).toLocaleString([], {weekday:'short',hour:'numeric',minute:'2-digit',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone})+' · '+x.v+' ft':'Not available';
     setCondition('tideNextHigh',display(high));setCondition('tideNextLow',display(low));
   }
 
