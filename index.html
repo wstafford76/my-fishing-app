@@ -373,7 +373,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   </div>
   <div id="conditionStatus" class="small-note" role="status">Choose a fishing location or use your phone's GPS to load conditions.</div>
   <div class="conditions-location" role="group" aria-label="Fishing mode" style="margin:12px 0">
-    <button class="action" id="freshwaterMode" type="button" aria-pressed="true">Freshwater · Bass</button>
+    <button class="action" id="freshwaterMode" type="button" aria-pressed="true">Freshwater</button>
     <button class="action secondary" id="surfMode" type="button" aria-pressed="false">Surf · Gulf Coast</button>
   </div>
   <p id="fishingModeNote" class="small-note">Freshwater mode: weather, pressure, daylight, and nearby water monitoring.</p>
@@ -598,7 +598,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   <form id="catchForm" class="log-form">
     <div class="form-grid">
       <label>Date<input id="catchDate" name="date" type="date" required></label>
-      <label>Fishing style<select id="catchMode" name="mode"><option>Freshwater · Bass</option><option>Surf · Gulf Coast</option></select></label>
+      <label>Fishing style<select id="catchMode" name="mode"><option>Freshwater</option><option>Surf · Gulf Coast</option></select></label>
       <label class="wide">Location<input name="location" id="catchLocation" placeholder="e.g. San Luis Pass, Galveston"></label>
       <label>Species<input name="species" required placeholder="e.g. Redfish, speckled trout, bass"></label>
       <label>Length<input name="length" placeholder="e.g. 24 in"></label>
@@ -1561,7 +1561,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     const status=document.getElementById('tripLogStatus');
     if(!lastConditionSnapshot){status.textContent='No current conditions loaded. Open Fishing Conditions and load a location first.';return;}
     const snapshot={...lastConditionSnapshot};
-    const entry={id:'conditions-'+Date.now(),capturedAt:new Date().toISOString(),location:document.getElementById('catchLocation').value.trim()||snapshot.location||'',mode:snapshot.mode==='surf'?'Surf · Gulf Coast':'Freshwater · Bass',conditions:snapshot};
+    const entry={id:'conditions-'+Date.now(),capturedAt:new Date().toISOString(),location:document.getElementById('catchLocation').value.trim()||snapshot.location||'',mode:snapshot.mode==='surf'?'Surf · Gulf Coast':'Freshwater',conditions:snapshot};
     tripConditionEntries.push(entry);
     if(saveTripLog()){status.textContent='Conditions recorded at '+new Date(entry.capturedAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.';renderTripLog();}
     else tripConditionEntries=tripConditionEntries.filter(x=>x.id!==entry.id);
@@ -1573,7 +1573,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   try{catchEntries=JSON.parse(localStorage.getItem(LOG_KEY)||'[]');if(!Array.isArray(catchEntries))catchEntries=[];}catch(e){catchEntries=[];}
   const catchForm=document.getElementById('catchForm'),photoInput=document.getElementById('catchPhotos'),preview=document.getElementById('photoPreview'),catchList=document.getElementById('catchList');
   document.getElementById('catchDate').value=localDate(new Date());
-  document.getElementById('catchMode').value=fishingMode==='surf'?'Surf · Gulf Coast':'Freshwater · Bass';
+  document.getElementById('catchMode').value=fishingMode==='surf'?'Surf · Gulf Coast':'Freshwater';
   document.getElementById('catchLocation').value=conditionCoords?.label||document.getElementById('conditionPlace').value||'';
   function openPhotoDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('photos'))req.result.createObjectStore('photos');};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
   async function photoPut(id,blob){const db=await openPhotoDB();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put(blob,id);tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>{db.close();reject(tx.error);};});}
