@@ -206,6 +206,10 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
 .form-grid label{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}
 .form-grid input,.form-grid textarea,.form-grid select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit;color:var(--ink)}
 .form-grid .wide{grid-column:1/-1}
+.conditions-location{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;margin:12px 0}
+.conditions-location input{min-width:0;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit}
+.conditions-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin:10px 0}
+@media(max-width:620px){.conditions-location{grid-template-columns:1fr 1fr}.conditions-location input{grid-column:1/-1}}
 @media(max-width:560px){.inventory-tools{grid-template-columns:1fr}.inventory-item{grid-template-columns:1fr}.item-buttons{justify-content:flex-end}.form-grid{grid-template-columns:1fr}}
 
 </style>
@@ -226,6 +230,7 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
 <nav class="main-tabs" aria-label="Main sections">
   <button class="main-tab active" data-panel="guidesPanel">Fishing Guides</button>
   <button class="main-tab" data-panel="inventoryPanel">Tackle Inventory</button>
+  <button class="main-tab" data-panel="conditionsPanel">Fishing Conditions</button>
 </nav>
 <section id="guidesPanel" class="panel">
 <input
@@ -296,6 +301,41 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   Tip: Open each guide once while online so your phone has a chance to save it for offline use. Use Safari on iPhone to add this app to your Home Screen.
 </div>
 
+</section>
+<section id="conditionsPanel" class="panel" hidden>
+  <h2 style="color:var(--navy);margin:0">Fishing Conditions</h2>
+  <p style="color:var(--muted);margin:4px 0 12px">Live weather, marine conditions, and nearby tide predictions for your fishing spot.</p>
+  <div class="conditions-location">
+    <input id="conditionPlace" type="search" placeholder="Enter a place (e.g. San Luis Pass, TX)" aria-label="Fishing location">
+    <button class="action secondary" id="conditionSearch" type="button">Find location</button>
+    <button class="action" id="conditionGPS" type="button">Use my GPS</button>
+  </div>
+  <div id="conditionStatus" class="small-note" role="status">Choose a fishing location or use your phone's GPS to load conditions.</div>
+  <div id="conditionResults" hidden>
+    <h3 id="conditionLocationName" style="color:var(--navy)"></h3>
+    <div class="conditions-grid">
+      <article class="stat"><strong id="wxTemp">—</strong><span>Temperature</span></article>
+      <article class="stat"><strong id="wxFeels">—</strong><span>Feels like</span></article>
+      <article class="stat"><strong id="wxWind">—</strong><span>Wind</span></article>
+      <article class="stat"><strong id="wxGust">—</strong><span>Wind gusts</span></article>
+      <article class="stat"><strong id="wxHumidity">—</strong><span>Humidity</span></article>
+      <article class="stat"><strong id="wxRain">—</strong><span>Precipitation</span></article>
+    </div>
+    <h3 style="color:var(--navy);margin:20px 0 8px">Marine conditions</h3>
+    <div class="conditions-grid">
+      <article class="stat"><strong id="seaWave">—</strong><span>Wave height</span></article>
+      <article class="stat"><strong id="seaPeriod">—</strong><span>Wave period</span></article>
+      <article class="stat"><strong id="seaDirection">—</strong><span>Wave direction</span></article>
+      <article class="stat"><strong id="seaTemp">—</strong><span>Sea temperature</span></article>
+    </div>
+    <h3 style="color:var(--navy);margin:20px 0 8px">Nearby tides</h3>
+    <p id="tideStation" class="small-note">Finding the nearest NOAA tide station…</p>
+    <div class="conditions-grid">
+      <article class="stat"><strong id="tideNextHigh">—</strong><span>Next high tide</span></article>
+      <article class="stat"><strong id="tideNextLow">—</strong><span>Next low tide</span></article>
+    </div>
+    <p class="small-note">Weather and marine conditions are estimates for the selected coordinates. Tide predictions come from the nearest available NOAA station and may not represent conditions at your exact shoreline.</p>
+  </div>
 </section>
 <section id="inventoryPanel" class="panel" hidden>
   <h2 style="color:var(--navy);margin:0">Tackle Inventory</h2>
@@ -567,6 +607,72 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     event.target.value = '';
   });
   renderInventory();
+
+  // Fishing Conditions: GPS/manual place, Open-Meteo weather + marine, NOAA tide predictions.
+  const conditionStatus = document.getElementById('conditionStatus');
+  const conditionResults = document.getElementById('conditionResults');
+  let conditionCoords = null;
+  const setCondition = (id,value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
+  const fmt = (v,unit,digits=0) => Number.isFinite(v) ? Number(v).toFixed(digits)+unit : '—';
+  async function loadConditions(lat,lon,label) {
+    conditionCoords={lat,lon,label};
+    conditionStatus.textContent='Loading weather and marine conditions…';
+    conditionResults.hidden=false;
+    setCondition('conditionLocationName',label+' · '+lat.toFixed(3)+', '+lon.toFixed(3));
+    const weatherUrl='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,wind_gusts_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto';
+    const marineUrl='https://marine-api.open-meteo.com/v1/marine?latitude='+lat+'&longitude='+lon+'&current=wave_height,wave_period,wave_direction,sea_surface_temperature&length_unit=imperial&temperature_unit=fahrenheit&timezone=auto';
+    const results=await Promise.allSettled([fetch(weatherUrl).then(r=>{if(!r.ok)throw Error('Weather service unavailable');return r.json()}),fetch(marineUrl).then(r=>{if(!r.ok)throw Error('Marine service unavailable');return r.json()})]);
+    if(results[0].status==='fulfilled'){
+      const c=results[0].value.current||{};
+      setCondition('wxTemp',fmt(c.temperature_2m,'°F'));setCondition('wxFeels',fmt(c.apparent_temperature,'°F'));
+      setCondition('wxWind',fmt(c.wind_speed_10m,' mph'));setCondition('wxGust',fmt(c.wind_gusts_10m,' mph'));
+      setCondition('wxHumidity',fmt(c.relative_humidity_2m,'%'));setCondition('wxRain',fmt(c.precipitation,' in',2));
+    } else {conditionStatus.textContent='Weather could not be loaded. '+results[0].reason.message;}
+    if(results[1].status==='fulfilled'){
+      const c=results[1].value.current||{};
+      setCondition('seaWave',fmt(c.wave_height,' ft',1));setCondition('seaPeriod',fmt(c.wave_period,' sec',1));
+      setCondition('seaDirection',fmt(c.wave_direction,'°'));setCondition('seaTemp',fmt(c.sea_surface_temperature,'°F'));
+    } else {['seaWave','seaPeriod','seaDirection','seaTemp'].forEach(id=>setCondition(id,'Unavailable'));}
+    conditionStatus.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.';
+    loadNearbyTides(lat,lon).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
+  }
+  async function findConditionPlace() {
+    const q=document.getElementById('conditionPlace').value.trim();
+    if(!q){conditionStatus.textContent='Enter a fishing location first.';return;}
+    conditionStatus.textContent='Finding location…';
+    try{
+      const url='https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=1&language=en&format=json';
+      const data=await fetch(url).then(r=>r.json());
+      if(!data.results||!data.results.length)throw Error('Location not found. Try adding the state.');
+      const p=data.results[0];await loadConditions(p.latitude,p.longitude,[p.name,p.admin1,p.country].filter(Boolean).join(', '));
+    }catch(e){conditionStatus.textContent=e.message;}
+  }
+  document.getElementById('conditionSearch').addEventListener('click',findConditionPlace);
+  document.getElementById('conditionPlace').addEventListener('keydown',e=>{if(e.key==='Enter')findConditionPlace();});
+  document.getElementById('conditionGPS').addEventListener('click',()=>{
+    if(!navigator.geolocation){conditionStatus.textContent='GPS location is not available in this browser.';return;}
+    conditionStatus.textContent='Requesting GPS permission…';
+    navigator.geolocation.getCurrentPosition(pos=>loadConditions(pos.coords.latitude,pos.coords.longitude,'Current GPS location').catch(e=>conditionStatus.textContent=e.message),err=>{conditionStatus.textContent=err.code===1?'Location permission was denied. You can enter a fishing location instead.':'Could not get your location. Try manual location search.';},{enableHighAccuracy:true,timeout:15000,maximumAge:300000});
+  });
+  async function loadNearbyTides(lat,lon) {
+    setCondition('tideStation','Searching NOAA tide stations…');
+    const meta=await fetch('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=tidepredictions&units=english&format=json').then(r=>{if(!r.ok)throw Error('Station list unavailable');return r.json()});
+    const stations=meta.stations||[];
+    if(!stations.length)throw Error('No NOAA tide stations returned');
+    const distance=(a,b)=>{const rad=x=>x*Math.PI/180;const dLat=rad(b.lat-a.lat),dLon=rad(b.lng-a.lng);const h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 3958.8*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));};
+    const station=stations.filter(x=>Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lng))).sort((a,b)=>distance({lat, lng:lon},{lat:Number(a.lat),lng:Number(a.lng)})-distance({lat,lng:lon},{lat:Number(b.lat),lng:Number(b.lng)}))[0];
+    if(!station)throw Error('No nearby station found');
+    setCondition('tideStation','Nearest station: '+station.name+' ('+distance({lat,lng:lon},{lat:Number(station.lat),lng:Number(station.lng)}).toFixed(1)+' mi away)');
+    const now=new Date(),start=new Date(now.getTime()-6*3600000),end=new Date(now.getTime()+36*3600000);
+    const stamp=d=>d.toISOString().replace(/[-:TZ]/g,'').slice(0,12);
+    const url='https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&application=MyFishingReference&begin_date='+stamp(start)+'&end_date='+stamp(end)+'&datum=MLLW&station='+station.id+'&time_zone=lst_ldt&units=english&interval=hilo&format=json';
+    const tide=await fetch(url).then(r=>r.json());
+    if(tide.error)throw Error(tide.error.message||'NOAA prediction error');
+    const events=tide.predictions||[];
+    const high=events.find(x=>x.type==='H'&&new Date(x.t)>now),low=events.find(x=>x.type==='L'&&new Date(x.t)>now);
+    const display=x=>x?new Date(x.t.replace(' ','T')+'-05:00').toLocaleString([], {weekday:'short',hour:'numeric',minute:'2-digit'})+' · '+x.v+' ft':'Not available';
+    setCondition('tideNextHigh',display(high));setCondition('tideNextLow',display(low));
+  }
 
   // In-app PDF viewer: renders one page at a time to keep mobile memory use low.
   const pdfViewer = document.getElementById('pdfViewer');
