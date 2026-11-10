@@ -983,12 +983,33 @@ on>
   });
   function classifyFishingLocationText(value){
     const text=String(value||'').toLowerCase();
-    const has=(words)=>words.some(word=>new RegExp('(^|[^a-z])'+word.replace(/[.*+?^${}()|[\]\\]/g,'\\  async function loadConditions(lat,lon,label) {
+    const has=words=>words.some(word=>new RegExp('(^|[^a-z])'+word+'([^a-z]|$)','i').test(text));
+    if(has(['san luis pass','surfside beach','galveston beach','bolivar peninsula','gulf of mexico','gulf coast','beach','ocean','gulf','surf','inlet','jetty','pier','estuary','tidal','saltwater','salt water','bay','harbor','harbour','ship channel']))return 'surf';
+    if(has(['lake','pond','reservoir','creek','river','stream','bayou','freshwater','fresh water','fishing pond']))return 'freshwater';
+    return null;
+  }
+  async function detectFishingMode(lat,lon,label,hint){
+    const named=classifyFishingLocationText((hint||'')+' '+(label||''));
+    if(named)return named;
+    try{
+      const url='https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&zoom=18&addressdetails=1';
+      const response=await fetch(url,{headers:{'Accept':'application/json'}});
+      if(!response.ok)throw Error('Reverse geocoding unavailable');
+      const place=await response.json(),a=place.address||{},feature=[place.category,place.type,place.addresstype,place.name,place.display_name,a.natural,a.water,a.waterway,a.leisure,a.amenity,a.landuse,a.place].filter(Boolean).join(' ').toLowerCase();
+      if(/\b(beach|sea|ocean|gulf|bay|strait|estuary|harbour|harbor|inlet|coast|tidal|salt|pier|jetty|marina|channel)\b/.test(feature))return 'surf';
+      if(/\b(lake|pond|reservoir|river|stream|creek|canal|waterfall|bayou)\b/.test(feature))return 'freshwater';
+    }catch(e){}
+    return null;
+  }
+  async function loadConditions(lat,lon,label,modeHint='') {
     conditionCoords={lat,lon,label};
-    // San Luis Pass is a coastal fishing location; keep its conditions in Surf mode.
-    const isSanLuisPass=/san luis pass/i.test(String(label||'')) ||
-      (Math.abs(lat-29.0818)<0.025 && Math.abs(lon-(-95.1252))<0.025);
-    if(isSanLuisPass) setFishingMode('surf');
+    const detectedMode=await detectFishingMode(lat,lon,label,modeHint);
+    if(detectedMode){
+      setFishingMode(detectedMode);
+      conditionStatus.textContent='Location identified as '+(detectedMode==='surf'?'saltwater / coastal':'freshwater')+'. Loading conditions…';
+    }else{
+      conditionStatus.textContent='Could not identify whether this spot is freshwater or saltwater. Keeping the current mode; select it manually if needed.';
+    }
     lastConditionSnapshot=null;')+'([^a-z]|$)','i').test(text));
     if(has(['san luis pass','surfside beach','galveston beach','bolivar peninsula','gulf of mexico','gulf coast','beach','ocean','gulf','surf','inlet','jetty','pier','estuary','tidal','saltwater','salt water','bay','harbor','harbour','ship channel']))return 'surf';
     if(has(['lake','pond','reservoir','creek','river','stream','bayou','freshwater','fresh water','fishing pond']))return 'freshwater';
