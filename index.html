@@ -927,6 +927,7 @@ on>
     initFishingMap();
     if(!fishingMap||!currentOverlayLayer)return;
     currentOverlayLayer.clearLayers();
+    if(!fishingMap.hasLayer(currentOverlayLayer)&&currentOverlayEnabled)currentOverlayLayer.addTo(fishingMap);
     const legend=document.getElementById('mapOverlayLegend');
     if(legend)legend.hidden=!currentOverlayEnabled||!data;
     if(!currentOverlayEnabled||!data)return;
@@ -958,8 +959,12 @@ on>
     button.textContent='Current overlay: '+(enabled?'on':'off');
     button.className='action'+(enabled?'':' secondary');
     button.setAttribute('aria-pressed',String(enabled));
-    if(currentOverlayLayer){if(enabled)currentOverlayLayer.addTo(fishingMap);else currentOverlayLayer.clearLayers();}
+    initFishingMap();
+    if(!fishingMap||!currentOverlayLayer)return;
+    if(!fishingMap.hasLayer(currentOverlayLayer)&&enabled)currentOverlayLayer.addTo(fishingMap);
     renderCurrentMapOverlay(currentOverlayData);
+    setTimeout(()=>fishingMap.invalidateSize(),100);
+    if(enabled&&!currentOverlayData)mapStatus.textContent='Current overlay is on. Waiting for nearby NOAA or USGS station data…';
   }
   document.getElementById('mapCurrentOverlay').addEventListener('click',()=>setCurrentOverlayEnabled(!currentOverlayEnabled));
   function setMapLayer(layer){
@@ -1091,6 +1096,7 @@ on>
     if(fishingMode==='surf'){
       loadPlainEnglishTideCurrent(lat,lon,label).catch(e=>setPlainReportError(e.message));
       loadNearbyTides(lat,lon,document.getElementById('conditionDate').value).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
+      loadNOAAWaterCurrent(lat,lon).catch(e=>setWaterCurrentUnavailable('NOAA current overlay unavailable: '+e.message));
     } else {
       loadUSGSWaterCurrent(lat,lon).catch(e=>setWaterCurrentUnavailable('USGS flow data unavailable: '+e.message));
     }
