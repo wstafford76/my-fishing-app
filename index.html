@@ -348,11 +348,12 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <article class="stat"><strong id="seaDirection">—</strong><span>Wave direction</span></article>
       <article class="stat"><strong id="seaTemp">—</strong><span>Sea temperature</span></article>
     </div>
-    <h3 style="color:var(--navy);margin:20px 0 8px">Nearby tides</h3>
+    <h3 id="tideHeading" style="color:var(--navy);margin:20px 0 8px">Tides for today</h3>
+    <p id="tideDateNote" class="small-note">Showing predicted high and low tides for today.</p>
     <p id="tideStation" class="small-note">Finding the nearest NOAA tide station…</p>
     <div class="conditions-grid">
-      <article class="stat"><strong id="tideNextHigh">—</strong><span>Next high tide</span></article>
-      <article class="stat"><strong id="tideNextLow">—</strong><span>Next low tide</span></article>
+      <article class="stat"><strong id="tideNextHigh">—</strong><span id="tideHighLabel">High tide today</span></article>
+      <article class="stat"><strong id="tideNextLow">—</strong><span id="tideLowLabel">Low tide today</span></article>
     </div>
     <p class="small-note">Weather and marine conditions are estimates for the selected coordinates. Tide predictions come from the nearest available NOAA station and may not represent conditions at your exact shoreline.</p>
   </div>
@@ -699,7 +700,13 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     const station=stations.filter(x=>Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lng))).sort((a,b)=>distance({lat,lng:lon},{lat:Number(a.lat),lng:Number(a.lng)})-distance({lat,lng:lon},{lat:Number(b.lat),lng:Number(b.lng)}))[0];
     if(!station)throw Error('No nearby station found');
     setCondition('tideStation','Nearest station: '+station.name+' ('+distance({lat,lng:lon},{lat:Number(station.lat),lng:Number(station.lng)}).toFixed(1)+' mi away)');
-    const chosen=dateValue||new Date().toLocaleDateString('en-CA');
+    const chosen=dateValue||localDate(new Date());
+    const chosenDate=new Date(chosen+'T12:00:00');
+    const chosenLabel=chosenDate.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'});
+    setCondition('tideHeading','Tides for '+chosenLabel);
+    setCondition('tideDateNote','These are the predicted tides for '+chosenLabel+' — not necessarily today. Times shown in your local time.');
+    setCondition('tideHighLabel','High tide · '+chosenLabel);
+    setCondition('tideLowLabel','Low tide · '+chosenLabel);
     const dayStart=new Date(chosen+'T00:00:00');
     const begin=new Date(dayStart.getTime()-24*3600000).toISOString().slice(0,10).replace(/-/g,'');
     const params=new URLSearchParams({product:'predictions',application:'MyFishingReference',begin_date:begin,range:'72',datum:'MLLW',station:String(station.id),time_zone:'gmt',units:'english',interval:'hilo',format:'json'});
@@ -753,7 +760,11 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     loadNearbyTides(lat,lon,selected).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
   }
   document.getElementById('conditionForecast').addEventListener('click',loadTripForecast);
-  conditionDate.addEventListener('change',()=>{document.getElementById('conditionForecastStatus').textContent='Date selected. Tap Check trip forecast to update weather, marine conditions, and tides.';});
+  conditionDate.addEventListener('change',()=>{
+    const d=conditionDate.value?new Date(conditionDate.value+'T12:00:00'):new Date();
+    const label=d.toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'});
+    document.getElementById('conditionForecastStatus').textContent='Date selected. Tap Check trip forecast to update weather, marine conditions, and tides for '+label+'.';
+  });
     // In-app PDF viewer: renders one page at a time to keep mobile memory use low.
   const pdfViewer = document.getElementById('pdfViewer');
   const pdfCanvas = document.getElementById('pdfCanvas');
