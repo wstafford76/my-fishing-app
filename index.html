@@ -1010,12 +1010,12 @@ on>
     }else{
       conditionStatus.textContent='Could not identify whether this spot is freshwater or saltwater. Keeping the current mode; select it manually if needed.';
     }
-    lastConditionSnapshot=null;')+'([^a-z]|$)','i').test(text));
-    if(has(['san luis pass','surfside beach','galveston beach','bolivar peninsula','gulf of mexico','gulf coast','beach','ocean','gulf','surf','inlet','jetty','pier','estuary','tidal','saltwater','salt water','bay','harbor','harbour','ship channel']))return 'surf';
-    if(has(['lake','pond','reservoir','creek','river','stream','bayou','freshwater','fresh water','fishing pond']))return 'freshwater';
-    return null;
-  }
-  async function detectFishingMode(lat,lon,label,hint){
+    lastConditionSnapshot=null;
+    if(fishingMap)updateFishingMap(lat,lon,label);
+    conditionStatus.textContent='Loading weather and marine conditions…';
+    conditionResults.hidden=false;
+    setCondition('conditionLocationName',label+' · '+lat.toFixed(3)+', '+lon.toFixed(3));
+    const weatherUrl=(lat,lon,label,hint){
     const named=classifyFishingLocationText((hint||'')+' '+(label||''));
     if(named)return named;
     try{
