@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10243a">
+<meta name="description" content="A personal, offline-ready fishing reference guide.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>My Fishing Reference</title>
+
+<style>
+:root {
+  --navy: #10243a;
+  --blue: #1c4262;
+  --gold: #f2c14e;
+  --paper: #f5f7fa;
+  --ink: #172331;
+  --muted: #607080;
+  --line: #dce3e9;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+header {
+  background: linear-gradient(135deg, var(--navy), var(--blue));
+  color: white;
+  padding: 28px 18px 24px;
+  border-bottom: 4px solid var(--gold);
+}
+
+.wrap { max-width: 900px; margin: auto; }
+
+h1 {
+  font-size: clamp(1.7rem, 5vw, 2.4rem);
+  margin: 0 0 4px;
+}
+
+header p { margin: 0; color: #e3ebf2; }
+
+main { padding: 20px 16px 40px; }
+
+.search {
+  width: 100%;
+  padding: 14px 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font: inherit;
+  background: white;
+  margin-bottom: 16px;
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.filter {
+  border: 1px solid var(--line);
+  background: white;
+  color: var(--navy);
+  padding: 8px 13px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.filter.active {
+  background: var(--navy);
+  color: white;
+  border-color: var(--navy);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+}
+
+.card[hidden] { display: none !important; }
+
+.card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 17px;
+  box-shadow: 0 3px 12px #10243a0b;
+  display: flex;
+  flex-direction: column;
+  min-height: 170px;
+}
+
+.tag {
+  color: #77560b;
+  background: #fff4d4;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: .76rem;
+  font-weight: 750;
+  align-self: flex-start;
+}
+
+.card h2 {
+  font-size: 1.1rem;
+  line-height: 1.3;
+  margin: 12px 0 6px;
+  color: var(--navy);
+}
+
+.card p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: .92rem;
+  flex: 1;
+}
+
+.open {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  background: var(--navy);
+  color: white;
+  padding: 10px 13px;
+  border-radius: 9px;
+  font-weight: 700;
+}
+
+.empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 28px;
+  grid-column: 1 / -1;
+}
+
+.note {
+  margin-top: 22px;
+  padding: 13px 15px;
+  background: #eaf0f5;
+  border-radius: 10px;
+  color: #405366;
+  font-size: .9rem;
+}
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: .8rem;
+  padding: 20px;
+}
+
+/* Inventory extension */
+.main-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.main-tab{border:1px solid var(--line);background:#fff;color:var(--navy);padding:10px 16px;border-radius:10px;font:inherit;font-weight:750;cursor:pointer}
+.main-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.panel[hidden]{display:none!important}
+.inventory-tools{display:grid;grid-template-columns:1fr auto;gap:10px;margin:12px 0}
+.inventory-tools input,.inventory-tools select{min-width:0;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
+.inventory-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 18px}
+.action{border:0;border-radius:9px;background:var(--navy);color:white;padding:10px 13px;font:inherit;font-weight:700;cursor:pointer}
+.action.secondary{background:#eaf0f5;color:var(--navy);border:1px solid var(--line)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:12px 0 18px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+.stat strong{display:block;font-size:1.45rem;color:var(--navy)}
+.stat span{font-size:.82rem;color:var(--muted)}
+.inventory-list{display:grid;gap:10px}
+.inventory-item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;grid-template-columns:1fr auto;gap:10px}
+.inventory-item h3{margin:0 0 4px;font-size:1rem;color:var(--navy)}
+.inventory-item p{margin:3px 0;color:var(--muted);font-size:.9rem}
+.item-meta{font-size:.78rem;color:#77560b;font-weight:750}
+.item-buttons{display:flex;gap:6px;align-items:start}
+.item-buttons button{border:1px solid var(--line);background:#f7f9fb;border-radius:7px;padding:7px 9px;cursor:pointer;color:var(--navy)}
+.small-note{font-size:.85rem;color:var(--muted);margin:10px 0}
+dialog{border:0;border-radius:14px;max-width:520px;width:calc(100% - 28px);padding:20px;box-shadow:0 15px 60px #0004}
+dialog::backdrop{background:#0b1724aa}
+dialog h2{margin:0 0 12px;color:var(--navy)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-grid label{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}
+.form-grid input,.form-grid textarea,.form-grid select{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font:inherit;color:var(--ink)}
+.form-grid .wide{grid-column:1/-1}
+@media(max-width:560px){.inventory-tools{grid-template-columns:1fr}.inventory-item{grid-template-columns:1fr}.item-buttons{justify-content:flex-end}.form-grid{grid-template-columns:1fr}}
+
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>My Fishing Reference</h1>
+    <p>Rig setups, lure selection, and quick fishing guides</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+
+<nav class="main-tabs" aria-label="Main sections">
+  <button class="main-tab active" data-panel="guidesPanel">Fishing Guides</button>
+  <button class="main-tab" data-panel="inventoryPanel">Tackle Inventory</button>
+</nav>
+<section id="guidesPanel" class="panel">
+<input
+  id="search"
+  class="search"
+  type="search"
+  placeholder="Search fish, rigs, knots, or tackle…"
+  aria-label="Search fishing guides"
+>
+
+<nav aria-label="Guide categories">
+  <button class="filter active" data-filter="all">All guides</button>
+  <button class="filter" data-filter="freshwater">Freshwater</button>
+  <button class="filter" data-filter="saltwater">Saltwater</button>
+  <button class="filter" data-filter="lures">Lures</button>
+</nav>
+
+<section id="guides" class="grid" aria-live="polite">
+
+<article class="card"
+data-category="freshwater"
+data-search="freshwater bass largemouth smallmouth carolina rig fishing bait soft plastic worms creature baits hooks weights sinkers bullet weight leader knots fishing line tackle bank fishing pond fishing texas rig wacky rig frog topwater">
+  <span class="tag">FRESHWATER</span>
+  <h2>Freshwater Carolina Rig</h2>
+  <p>Approved setup guide with recommended knots for freshwater fishing.</p>
+  <a class="open" href="https://raw.githubusercontent.com/wstafford76/my-fishing-reference-backup/main/guides/Freshwater_Carolina_Rig_Approved_Recommended_Knots_6x4.pdf" target="_blank" rel="noopener">Open guide</a>
+</article>
+
+<article class="card"
+data-category="saltwater"
+data-search="saltwater gulf coast carolina rig speckled trout spotted seatrout redfish red drum flounder bait live bait dead bait shrimp mullet croaker fish hooks sinkers weights leader fishing line tackle surf inshore">
+  <span class="tag">SALTWATER</span>
+  <h2>Saltwater Carolina Rig — Gulf Coast</h2>
+  <p>Gulf Coast Carolina rig reference for inshore saltwater fishing.</p>
+  <a class="open" href="https://raw.githubusercontent.com/wstafford76/my-fishing-reference-backup/main/guides/Carolina_Rig_Saltwater_Gulf_Coast_6x4.pdf" target="_blank" rel="noopener">Open guide</a>
+</article>
+
+<article class="card"
+data-category="saltwater"
+data-search="bull drum black drum red drum fish finder rig surf fishing beach fishing bait cut bait mullet shrimp crab circle hooks pyramid sinkers weights leader fishing line tackle big drum">
+  <span class="tag">SALTWATER</span>
+  <h2>Bull Drum Fish Finder Rig</h2>
+  <p>Approved fish-finder rig reference for targeting bull drum.</p>
+  <a class="open" href="https://raw.githubusercontent.com/wstafford76/my-fishing-reference-backup/main/guides/Bull_Drum_Fish_Finder_Rig_APPROVED_6x4.pdf" target="_blank" rel="noopener">Open guide</a>
+</article>
+
+<article class="card"
+data-category="saltwater"
+data-search="saltwater artificial bait lures soft plastics paddle tails shrimp imitation jerk shad flukes jig heads speckled trout redfish flounder fishing hooks retrieve artificial shrimp plastic bait fishing tackle">
+  <span class="tag">SALTWATER</span>
+  <h2>Saltwater Artificial Soft Plastics</h2>
+  <p>Approved soft-plastic rig and lure reference for Gulf Coast species.</p>
+  <a class="open" href="https://raw.githubusercontent.com/wstafford76/my-fishing-reference-backup/main/guides/Saltwater_Artificial_Soft_Plastic_Rig_Guide_Approved.pdf" target="_blank" rel="noopener">Open guide</a>
+</article>
+
+<article class="card"
+data-category="lures"
+data-search="butchers bite bait lures artificial bait lure color selection water clarity clear stained dirty muddy water bright sun overcast cloudy dawn dusk night depth contrast silhouette bass trout redfish fishing topwater frog crankbait soft plastic">
+  <span class="tag">LURE SELECTION</span>
+  <h2>Butcher’s Bite — Lure Selection</h2>
+  <p>29-page guide covering water clarity, light, depth, contrast, silhouette, and lure-color decisions.</p>
+  <a class="open" href="https://raw.githubusercontent.com/wstafford76/my-fishing-reference-backup/main/guides/Butchers_Bite_Pocket_Guide_VIDEO_ORDER.pdf" target="_blank" rel="noopener">Open guide</a>
+</article>
+
+</section>
+
+<div class="note">
+  Tip: Open each guide once while online so your phone has a chance to save it for offline use. Use Safari on iPhone to add this app to your Home Screen.
+</div>
+
+</section>
+<section id="inventoryPanel" class="panel" hidden>
+  <h2 style="color:var(--navy);margin:0">Tackle Inventory</h2>
+  <p style="color:var(--muted);margin:4px 0 10px">Your boxes, soft-bait bags, fishing line, and unassigned gear.</p>
+  <div class="stats">
+    <div class="stat"><strong id="totalItems">0</strong><span>Inventory entries</span></div>
+    <div class="stat"><strong id="boxCount">4</strong><span>Main tackle boxes</span></div>
+    <div class="stat"><strong id="bagCount">2</strong><span>Soft-bait bags</span></div>
+  </div>
+  <div class="inventory-tools">
+    <input id="invSearch" type="search" placeholder="Search item, brand, size, or compartment…" aria-label="Search inventory">
+    <select id="invCategory" aria-label="Filter inventory category">
+      <option value="all">All categories</option>
+    </select>
+  </div>
+  <div class="inventory-actions">
+    <button class="action" id="addItem">+ Add item</button>
+    <button class="action secondary" id="exportInventory">Export backup</button>
+    <button class="action secondary" id="importInventory">Import backup</button>
+    <input type="file" id="importFile" accept="application/json" hidden>
+  </div>
+  <p class="small-note">Changes are saved in this browser on this device. Export a backup before clearing browser data or moving to another device.</p>
+  <div id="inventoryList" class="inventory-list"></div>
+</section>
+
+</main>
+
+<footer>My Fishing Reference · Personal fishing guide</footer>
+
+<script>
+(() => {
+
+  const searchBox = document.getElementById('search');
+  const buttons = Array.from(document.querySelectorAll('.filter'));
+  const cards = Array.from(document.querySelectorAll('#guides .card'));
+  const guideList = document.getElementById('guides');
+
+  let selectedCategory = 'all';
+
+  function updateGuides() {
+
+    const query = searchBox.value.trim().toLowerCase();
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+
+      const searchableText = [
+        card.querySelector('h2')?.textContent || '',
+        card.querySelector('p')?.textContent || '',
+        card.dataset.search || '',
+        card.dataset.category || ''
+      ].join(' ').toLowerCase();
+
+      const categoryMatches =
+        selectedCategory === 'all' ||
+        card.dataset.category === selectedCategory;
+
+      const searchMatches =
+        query === '' ||
+        searchableText.includes(query);
+
+      const showCard = categoryMatches && searchMatches;
+
+      card.hidden = !showCard;
+
+      if (showCard) visibleCount++;
+
+    });
+
+    let emptyMessage = guideList.querySelector('.empty');
+
+    if (visibleCount === 0) {
+
+      if (!emptyMessage) {
+        emptyMessage = document.createElement('p');
+        emptyMessage.className = 'empty';
+        emptyMessage.textContent = 'No guides match that search.';
+        guideList.appendChild(emptyMessage);
+      }
+
+    } else if (emptyMessage) {
+      emptyMessage.remove();
+    }
+
+  }
+
+  searchBox.addEventListener('input', updateGuides);
+  searchBox.addEventListener('search', updateGuides);
+
+  buttons.forEach(button => {
+
+    button.addEventListener('click', () => {
+
+      selectedCategory = button.dataset.filter || 'all';
+
+      buttons.forEach(item => {
+        item.classList.toggle('active', item === button);
+      });
+
+      updateGuides();
+
+    });
+
+  });
+
+  updateGuides();
+
+
+  // Main section tabs
+  const mainTabs = Array.from(document.querySelectorAll('.main-tab'));
+  mainTabs.forEach(tab => tab.addEventListener('click', () => {
+    mainTabs.forEach(t => t.classList.toggle('active', t === tab));
+    document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== tab.dataset.panel);
+  }));
+
+  // Inventory data is seeded once; subsequent edits live in localStorage.
+  const inventorySeed = [{"box": "Box 1", "compartment": "C01", "name": "Barrel swivels", "details": "Size unknown; loose; size unverified.", "category": "Terminal tackle", "quantity": "", "status": "Needs verification"}, {"box": "Box 1", "compartment": "C02", "name": "Stainless steel barrel swivels", "details": "Size 2; 310 lb test.", "category": "Terminal tackle", "quantity": "10", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C03", "name": "Stainless steel barrel swivels", "details": "Size 1/0; 510 lb test.", "category": "Terminal tackle", "quantity": "10", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C04", "name": "Clear fishing beads", "details": "Color: clear.", "category": "Terminal tackle", "quantity": "", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C05", "name": "Red fishing beads", "details": "Color: red.", "category": "Terminal tackle", "quantity": "", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C06", "name": "Offshore Angler sinker slides", "details": "Package quantity recorded.", "category": "Terminal tackle", "quantity": "5", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C07", "name": "Steel egg sinkers", "details": "1/4 oz.", "category": "Weights", "quantity": "7", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C08", "name": "Steel egg sinkers", "details": "1/2 oz.", "category": "Weights", "quantity": "4", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C09", "name": "Lead egg sinkers", "details": "1 1/2 oz.", "category": "Weights", "quantity": "2", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C10", "name": "Lead egg sinkers", "details": "2 oz.", "category": "Weights", "quantity": "4", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C11", "name": "Jig heads", "details": "1/4 oz; 2/0.", "category": "Jig heads", "quantity": "3", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C12", "name": "Jig heads", "details": "1/2 oz; 2/0.", "category": "Jig heads", "quantity": "2", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C13", "name": "Silver jig heads", "details": "1/4 oz; 1/0.", "category": "Jig heads", "quantity": "5", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C14", "name": "Gold-eye jig heads", "details": "1/4 oz; 1/0.", "category": "Jig heads", "quantity": "2", "status": "Confirmed"}, {"box": "Box 1", "compartment": "C15", "name": "White jig heads", "details": "1/4 oz; 1/0.", "category": "Jig heads", "quantity": "TBD", "status": "Quantity not counted"}, {"box": "Box 2", "compartment": "C01", "name": "1/0 circle hooks", "details": "", "category": "Hooks", "quantity": "17", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C02", "name": "2/0 circle hooks", "details": "", "category": "Hooks", "quantity": "25", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C03", "name": "Eagle Claw Lazer Sharp Circle Bait hooks", "details": "6/0; live and chunk bait.", "category": "Hooks", "quantity": "6", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C04", "name": "Eagle Claw Lazer Sharp Circle Sea Hook", "details": "7/0; live and chunk bait.", "category": "Hooks", "quantity": "25", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C05", "name": "Eagle Claw Lazer Sharp Circle Sea Hook", "details": "8/0; live and chunk bait.", "category": "Hooks", "quantity": "25", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C06", "name": "Eagle Claw Lazer Sharp Kahle hooks", "details": "4/0; live and chunk bait.", "category": "Hooks", "quantity": "40", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C07", "name": "Eagle Claw Lazer Sharp Kahle hooks", "details": "3/0.", "category": "Hooks", "quantity": "40", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C08", "name": "Eagle Claw Lazer Sharp Wide Gap Worm hooks", "details": "2/0; model L092G-2/0.", "category": "Hooks", "quantity": "6", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C09", "name": "Eagle Claw Lazer Sharp Wide Gap Worm hooks", "details": "3/0; model L092G-3/0.", "category": "Hooks", "quantity": "6", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C10", "name": "Gamakatsu Octopus hooks", "details": "Size 1/0; model 02311.", "category": "Hooks", "quantity": "4", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C11", "name": "Gamakatsu Finesse Hybrid Worm hooks", "details": "Size 3/0; model 366213.", "category": "Hooks", "quantity": "4", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C12", "name": "6th Sense OX Flipping Hooks", "details": "4/0.", "category": "Hooks", "quantity": "5", "status": "Confirmed"}, {"box": "Box 2", "compartment": "C13", "name": "Unknown-brand offset worm hook", "details": "Estimated 2/0; original package unavailable.", "category": "Hooks", "quantity": "2", "status": "Estimated size"}, {"box": "Box 2", "compartment": "C14", "name": "Unknown-brand offset wide-gap worm hook", "details": "Estimated 2/0; original package unavailable.", "category": "Hooks", "quantity": "3", "status": "Estimated size"}, {"box": "Box 2", "compartment": "C15", "name": "Unknown-brand offset worm hook", "details": "Estimated 1/0; original package unavailable.", "category": "Hooks", "quantity": "3", "status": "Estimated size"}, {"box": "Box 2", "compartment": "Unassigned", "name": "Heavy-wire circle-style hooks", "details": "Approx. 2/0 per user; exact size and quantity not confirmed; original package unavailable.", "category": "Hooks", "quantity": "TBD", "status": "Needs verification"}, {"box": "Box 3", "compartment": "C01", "name": "Black bullet worm sinkers", "details": "1/8 oz; brand unknown; quantity not counted.", "category": "Weights", "quantity": "TBD", "status": "Confirmed"}, {"box": "Box 3", "compartment": "C02", "name": "Black bullet worm sinkers", "details": "1/8 oz; brand unknown; quantity not counted.", "category": "Weights", "quantity": "TBD", "status": "Confirmed"}, {"box": "Box 3", "compartment": "C03", "name": "Black bullet worm sinkers", "details": "1/4 oz; brand unknown; quantity not counted.", "category": "Weights", "quantity": "TBD", "status": "Confirmed"}, {"box": "Box 3", "compartment": "C04", "name": "Ozark Trail reusable split shot", "details": "Size #3.", "category": "Weights", "quantity": "TBD", "status": "Confirmed"}, {"box": "Box 3", "compartment": "C05", "name": "Eupheng Wacky Worm O-rings", "details": "Small.", "category": "Accessories", "quantity": "", "status": "Confirmed"}, {"box": "Box 3", "compartment": "C06", "name": "Eupheng Wacky Worm O-rings", "details": "Medium.", "category": "Accessories", "quantity": "", "status": "Confirmed"}, {"box": "Box 3", "compartment": "C07", "name": "Eupheng Wacky Worm O-rings", "details": "Large.", "category": "Accessories", "quantity": "", "status": "Confirmed"}, {"box": "Box 3", "compartment": "C08", "name": "White twin-tail grubs and spinner-blade assembly", "details": "Two loose white twin-tail grubs, one grub on jighead, and one silver spinner-blade assembly shown; details/count uncertain.", "category": "Soft bait / components", "quantity": "TBD", "status": "Confirmed"}, {"box": "Box 3", "compartment": "C09", "name": "Thill slip float", "details": "Yellow/red/white/black; size and weight rating TBD.", "category": "Floats", "quantity": "TBD", "status": "Confirmed"}, {"box": "Box 3", "compartment": "C10", "name": "Offset worm hooks", "details": "Size 1/0; brand unknown.", "category": "Hooks", "quantity": "3", "status": "Confirmed"}, {"box": "Box 3", "compartment": "C11", "name": "SPRO Bronzeye Frog 65", "details": "Midnight Walker; color #07; 65 mm; 5/8 oz.", "category": "Lures", "quantity": "1", "status": "Confirmed"}, {"box": "Box 3", "compartment": "C12", "name": "SPRO Bronzeye Frog 65", "details": "Natural Green; color #02; 65 mm; 5/8 oz.", "category": "Lures", "quantity": "1", "status": "Confirmed"}, {"box": "Box 3", "compartment": "Unassigned", "name": "Thill Premium Bobber Stops", "details": "Orange cord with black sleeves and red beads/threading loops.", "category": "Accessories", "quantity": "TBD", "status": "Location not assigned"}, {"box": "Box 3", "compartment": "Unassigned", "name": "VMC black rubber Sinker Stops", "details": "Used to peg bullet weights on Texas-rigged worms.", "category": "Accessories", "quantity": "TBD", "status": "Location not assigned"}, {"box": "Box 3", "compartment": "Unassigned", "name": "Red/white clip-on bobbers", "details": "Brand and size unknown.", "category": "Floats", "quantity": "2", "status": "Location not assigned"}, {"box": "Box 4", "compartment": "C01", "name": "H&H saltwater pyramid sinkers", "details": "3 oz.", "category": "Weights", "quantity": "3", "status": "Confirmed"}, {"box": "Box 4", "compartment": "C02", "name": "H&H saltwater pyramid sinkers", "details": "4 oz.", "category": "Weights", "quantity": "2", "status": "Confirmed"}, {"box": "Box 4", "compartment": "C03", "name": "FishRazr pyramid-style sinkers", "details": "8 oz each; brass attachment eyes.", "category": "Weights", "quantity": "3", "status": "Confirmed"}, {"box": "Box 4", "compartment": "C04", "name": "Z-Man Rattle Snaker tool", "details": "Lure-rattle insertion tool; includes 10 glass rattles.", "category": "Tools", "quantity": "1", "status": "Confirmed"}, {"box": "Unassigned", "compartment": "TBD", "name": "Casting practice plug — 1/4 oz", "details": "Orange casting plug; first plug originally weighed 7 g and was rounded to 1/4 oz.", "category": "Practice gear", "quantity": "1", "status": "Storage location not assigned"}, {"box": "Unassigned", "compartment": "TBD", "name": "Casting practice plug — 3/8 oz", "details": "Orange casting plug; first plug originally weighed 7 g and was rounded to 1/4 oz.", "category": "Practice gear", "quantity": "1", "status": "Storage location not assigned"}, {"box": "Unassigned", "compartment": "TBD", "name": "Casting practice plug — 2/5 oz", "details": "Orange casting plug; first plug originally weighed 7 g and was rounded to 1/4 oz.", "category": "Practice gear", "quantity": "1", "status": "Storage location not assigned"}, {"box": "Unassigned", "compartment": "TBD", "name": "Casting practice plug — 1/3 oz", "details": "Orange casting plug; first plug originally weighed 7 g and was rounded to 1/4 oz.", "category": "Practice gear", "quantity": "1", "status": "Storage location not assigned"}, {"box": "Unassigned", "compartment": "TBD", "name": "Casting practice plug — 3/4 oz", "details": "Orange casting plug; first plug originally weighed 7 g and was rounded to 1/4 oz.", "category": "Practice gear", "quantity": "1", "status": "Storage location not assigned"}, {"box": "KastKing Bag 1", "compartment": "Freshwater / Bass", "name": "Zoom Super Salt Finesse Worms", "details": "White Pearl; package shows 10 pcs.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 1", "compartment": "Freshwater / Bass", "name": "Berkley PowerBait Nightcrawler", "details": "6 in; Natural; package count 13.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 1", "compartment": "Freshwater / Bass", "name": "Berkley PowerBait Watermelon Shaky Worms", "details": "6 in.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 1", "compartment": "Freshwater / Bass", "name": "Yamamoto Senko", "details": "5 in; color/label as shown in package photo.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 1", "compartment": "Freshwater / Bass", "name": "Reaction Innovations Sweet Beaver 4.20", "details": "Blue.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 1", "compartment": "Freshwater / Bass", "name": "Reaction Innovations Sweet Beaver 4.20", "details": "Green Pumpkin.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 2", "compartment": "Saltwater / Minnow Baits", "name": "Rapala CrushCity The Mayor", "details": "Sight Flash; 2.5 in; 8 pcs.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 2", "compartment": "Saltwater / Minnow Baits", "name": "Rapala CrushCity The Mayor", "details": "Gizzard Shad; 2.5 in; 8 pcs.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 2", "compartment": "Saltwater / Minnow Baits", "name": "Rapala CrushCity The Mayor", "details": "Red Craw; 3 in; 8 pcs.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 2", "compartment": "Saltwater / Minnow Baits", "name": "Z-Man MinnowZ", "details": "Glow/Chartreuse Tail; 3 in; 6 pack; ElaZtech.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 2", "compartment": "Saltwater / Minnow Baits", "name": "Z-Man MinnowZ", "details": "Opening Night; 3 in; 6 pack; ElaZtech.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 2", "compartment": "Saltwater / Minnow Baits", "name": "Z-Man DieZel MinnowZ", "details": "Sexy Penny; 4 in; 5 pack; ElaZtech.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "KastKing Bag 2", "compartment": "Saltwater / Minnow Baits", "name": "Z-Man DieZel MinnowZ", "details": "Pearl; 4 in; 5 pack; ElaZtech.", "category": "Soft baits", "quantity": "1 package", "status": "Confirmed"}, {"box": "Fishing Line & Leaders", "compartment": "Unassigned", "name": "PowerPro braided line", "details": "20 lb test; 6 lb diameter equivalent; 300 yd spool label.", "category": "Fishing line", "quantity": "1 spool", "status": "Confirmed"}, {"box": "Fishing Line & Leaders", "compartment": "Unassigned", "name": "PowerPro braided line", "details": "30 lb test; 8 lb diameter equivalent; 300 yd spool label.", "category": "Fishing line", "quantity": "1 spool", "status": "Confirmed"}, {"box": "Fishing Line & Leaders", "compartment": "Unassigned", "name": "PowerPro braided line", "details": "65 lb test; 16 lb diameter equivalent; 150 yd spool label.", "category": "Fishing line", "quantity": "1 spool", "status": "Confirmed"}, {"box": "Fishing Line & Leaders", "compartment": "Unassigned", "name": "Seaguar Blue Label fluorocarbon leader", "details": "20 lb; 25 yd; two spools.", "category": "Fishing line", "quantity": "1 spool", "status": "Confirmed"}, {"box": "Fishing Line & Leaders", "compartment": "Unassigned", "name": "Seaguar Blue Label fluorocarbon leader", "details": "30 lb; 25 yd.", "category": "Fishing line", "quantity": "1 spool", "status": "Confirmed"}, {"box": "Fishing Line & Leaders", "compartment": "Unassigned", "name": "Offshore Angler Premier fluorocarbon leader", "details": "50 lb; pink; 25 m.", "category": "Fishing line", "quantity": "1 spool", "status": "Confirmed"}, {"box": "Fishing Line & Leaders", "compartment": "Unassigned", "name": "Trik Fish fluorocarbon leader", "details": "30 lb; 25 yd.", "category": "Fishing line", "quantity": "1 spool", "status": "Confirmed"}, {"box": "Fishing Line & Leaders", "compartment": "Unassigned", "name": "Berkley Trilene Big Game Fluoro Power", "details": "15 lb; clear; 350 yd.", "category": "Fishing line", "quantity": "1 spool", "status": "Confirmed"}, {"box": "Fishing Line & Leaders", "compartment": "Unassigned", "name": "Berkley Trilene Big Game monofilament", "details": "20 lb; green; 660 yd.", "category": "Fishing line", "quantity": "1 spool", "status": "Confirmed"}, {"box": "Unassigned", "compartment": "TBD", "name": "Popping cork", "details": "Orange; weighted wire-through float with beads and swivel; brand/weight unknown.", "category": "Floats", "quantity": "1", "status": "Storage location not assigned"}, {"box": "Unassigned", "compartment": "TBD", "name": "Popping cork", "details": "Chartreuse/yellow; weighted wire-through float with beads and swivel; brand/weight unknown.", "category": "Floats", "quantity": "1", "status": "Storage location not assigned"}, {"box": "Unassigned", "compartment": "TBD", "name": "Berkley Gulp! Alive! Saltwater Shrimp", "details": "New Penny; 3 in; one liquid-preserved container.", "category": "Soft baits", "quantity": "1 container", "status": "Confirmed"}];
+  const STORAGE_KEY = 'myFishingReferenceInventoryV1';
+  let inventory = inventorySeed;
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) inventory = JSON.parse(saved);
+  } catch (e) { console.warn('Could not load saved inventory', e); }
+  const listEl = document.getElementById('inventoryList');
+  const searchEl = document.getElementById('invSearch');
+  const categoryEl = document.getElementById('invCategory');
+  const totalEl = document.getElementById('totalItems');
+  const dialog = document.createElement('dialog');
+  dialog.innerHTML = `
+    <form method="dialog" id="itemForm">
+      <h2 id="dialogTitle">Add inventory item</h2>
+      <div class="form-grid">
+        <label>Storage / box<input name="box" placeholder="e.g. Box 1, KastKing Bag 1"></label>
+        <label>Compartment / section<input name="compartment" placeholder="e.g. C01 or Unassigned"></label>
+        <label class="wide">Item name<input name="name" required></label>
+        <label>Category<input name="category" placeholder="Hooks, Weights, Soft baits…"></label>
+        <label>Quantity<input name="quantity" placeholder="e.g. 5, 1 package, TBD"></label>
+        <label class="wide">Details<textarea name="details" rows="3"></textarea></label>
+        <label class="wide">Status<input name="status" placeholder="Confirmed, needs verification…"></label>
+      </div>
+      <div class="inventory-actions" style="justify-content:flex-end;margin-bottom:0">
+        <button class="action secondary" value="cancel">Cancel</button>
+        <button class="action" id="saveItem" value="save">Save item</button>
+      </div>
+    </form>`;
+  document.body.appendChild(dialog);
+  let editingIndex = -1;
+  function persist() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory)); }
+    catch (e) { alert('The browser could not save this inventory. Export a backup and check browser storage settings.'); }
+  }
+  function populateCategories() {
+    const current = categoryEl.value || 'all';
+    const cats = [...new Set(inventory.map(x => x.category).filter(Boolean))].sort();
+    categoryEl.innerHTML = '<option value="all">All categories</option>' + cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    categoryEl.value = cats.includes(current) ? current : 'all';
+  }
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function renderInventory() {
+    const q = searchEl.value.trim().toLowerCase();
+    const cat = categoryEl.value;
+    const filtered = inventory.map((item, index) => ({item,index})).filter(({item}) => {
+      const text = Object.values(item).join(' ').toLowerCase();
+      return (!q || text.includes(q)) && (cat === 'all' || item.category === cat);
+    });
+    totalEl.textContent = inventory.length;
+    populateCategories();
+    listEl.innerHTML = filtered.length ? filtered.map(({item,index}) => `
+      <article class="inventory-item">
+        <div>
+          <div class="item-meta">${escapeHtml(item.box || 'Unassigned')} · ${escapeHtml(item.compartment || '—')} · ${escapeHtml(item.category || 'Other')}</div>
+          <h3>${escapeHtml(item.name)}</h3>
+          <p>${escapeHtml(item.details || '')}</p>
+          <p><strong>Quantity:</strong> ${escapeHtml(item.quantity || 'Not recorded')}${item.status ? ` · <strong>Status:</strong> ${escapeHtml(item.status)}` : ''}</p>
+        </div>
+        <div class="item-buttons">
+          <button type="button" data-edit="${index}" aria-label="Edit ${escapeHtml(item.name)}">Edit</button>
+          <button type="button" data-delete="${index}" aria-label="Delete ${escapeHtml(item.name)}">Delete</button>
+        </div>
+      </article>`).join('') : '<p class="empty">No inventory items match that search.</p>';
+  }
+  function openEditor(index=-1) {
+    editingIndex = index;
+    const form = dialog.querySelector('form');
+    form.reset();
+    dialog.querySelector('#dialogTitle').textContent = index < 0 ? 'Add inventory item' : 'Edit inventory item';
+    if (index >= 0) Object.entries(inventory[index]).forEach(([k,v]) => { if(form.elements[k]) form.elements[k].value = v ?? ''; });
+    dialog.showModal();
+  }
+  dialog.querySelector('form').addEventListener('submit', event => {
+    if (event.submitter && event.submitter.value === 'cancel') return;
+    event.preventDefault();
+    const form = event.currentTarget;
+    const item = Object.fromEntries(['box','compartment','name','category','quantity','details','status'].map(k => [k, form.elements[k].value.trim()]));
+    if (!item.name) return;
+    if (editingIndex < 0) inventory.push(item); else inventory[editingIndex] = item;
+    persist(); renderInventory(); dialog.close();
+  });
+  document.getElementById('addItem').addEventListener('click', () => openEditor());
+  listEl.addEventListener('click', event => {
+    const edit = event.target.closest('[data-edit]');
+    const del = event.target.closest('[data-delete]');
+    if (edit) openEditor(Number(edit.dataset.edit));
+    if (del) {
+      const i = Number(del.dataset.delete);
+      if (confirm(`Delete "${inventory[i].name}" from this device's inventory?`)) {
+        inventory.splice(i,1); persist(); renderInventory();
+      }
+    }
+  });
+  searchEl.addEventListener('input', renderInventory);
+  categoryEl.addEventListener('change', renderInventory);
+  document.getElementById('exportInventory').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(inventory,null,2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'my-fishing-reference-inventory.json'; a.click(); URL.revokeObjectURL(a.href);
+  });
+  document.getElementById('importInventory').addEventListener('click', () => document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change', async event => {
+    const file = event.target.files[0]; if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (!Array.isArray(data) || !data.every(x => x && typeof x.name === 'string')) throw new Error('Invalid inventory backup');
+      if (confirm(`Replace the current inventory with ${data.length} imported entries?`)) { inventory = data; persist(); renderInventory(); }
+    } catch (e) { alert('That file is not a valid My Fishing Reference inventory backup.'); }
+    event.target.value = '';
+  });
+  renderInventory();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+
+})();
+</script>
+
+</body>
+</html>
