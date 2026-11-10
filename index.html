@@ -1061,7 +1061,8 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     setCondition('waterCurrentNext',next);
     setCondition('waterCurrentNextLabel',nextLabel);
     setCondition('waterCurrentIntro','NOAA tidal-current prediction · '+(station.type==='H'?'harmonic station':'subordinate station'));
-    setCondition('waterCurrentStation','Nearest station: '+station.name+' · '+station.distance.toFixed(1)+' mi away · '+(station.depth!==null?'prediction depth '+station.depth+' ft':'depth not specified')+'.');
+    const depthNote=station.depth!==null?' · prediction depth '+station.depth+' ft'+(station.depthType==='S'?' below surface':station.depthType==='B'?' below chart datum':''):' · depth not specified';
+    setCondition('waterCurrentStation','Nearest station: '+station.name+' · '+station.distance.toFixed(1)+' mi away'+depthNote+'.');
     setCondition('waterCurrentCaveat','This is a station prediction, not a live reading at your exact beach or pass. Current can vary across channels, guts, and shoreline structure. Check the station location before relying on it.');
   }
   async function loadUSGSWaterCurrent(lat,lon){
