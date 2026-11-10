@@ -430,6 +430,18 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <article class="stat"><strong id="wxHumidity">—</strong><span>Humidity</span></article>
       <article class="stat"><strong id="wxRain">—</strong><span>Precipitation</span></article>
     </div>
+    <section id="waterCurrentSection" class="log-form" style="margin-top:18px">
+      <h3 style="color:var(--navy);margin:0 0 6px">Water Current</h3>
+      <p id="waterCurrentIntro" class="small-note">Current information from the nearest available monitoring source.</p>
+      <div class="conditions-grid">
+        <article class="stat"><strong id="waterCurrentState">—</strong><span id="waterCurrentStateLabel">Current status</span></article>
+        <article class="stat"><strong id="waterCurrentSpeed">—</strong><span id="waterCurrentSpeedLabel">Current speed</span></article>
+        <article class="stat"><strong id="waterCurrentDirection">—</strong><span>Direction</span></article>
+        <article class="stat"><strong id="waterCurrentNext">—</strong><span id="waterCurrentNextLabel">Next current change</span></article>
+      </div>
+      <p id="waterCurrentStation" class="small-note">Load a fishing location to find nearby current data.</p>
+      <p id="waterCurrentCaveat" class="small-note">Predictions and nearby gauges may not represent the exact water at your fishing spot.</p>
+    </section>
     <div id="freshwaterConditions">
       <h3 style="color:var(--navy);margin:20px 0 8px">Freshwater conditions</h3>
       <div class="conditions-grid">
@@ -531,6 +543,9 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <details><summary><strong>Wind speed and direction</strong></summary><p class="small-note">Wind can move bait, change surface conditions, and affect casting. In the surf, wind direction relative to the shoreline matters as much as speed. Strong onshore wind often makes the water rougher; sheltered shorelines may fish differently.</p></details>
     <details><summary><strong>Wave height and period</strong></summary><p class="small-note">Wave height estimates the vertical size of waves. Wave period is the time between waves. Longer-period waves can carry more energy even when wave height looks similar. These are modeled estimates, not a measurement at your exact cast.</p></details>
     <details><summary><strong>Tides</strong></summary><p class="small-note">Incoming tide is water moving toward higher tide; outgoing tide is moving toward lower tide. Current moving through cuts, passes, drains, and channels can concentrate bait and predators. The app uses the nearest available NOAA prediction station, which may not match the exact shoreline.</p></details>
+    <details><summary><strong>Water current, flood, ebb, and slack</strong></summary><p class="small-note">Current is water moving horizontally. Speed tells you how fast it is moving; direction tells you where it is flowing. NOAA reports tidal-current predictions in knots (1 knot is about 1.15 mph). Flood means the tide-driven current is moving in the local flood direction; ebb means it is moving in the opposite, outgoing direction. Slack is the brief period when the tidal current is weakest as it changes direction. Slack current does not always happen at the exact time of high or low tide. NOAA current predictions are forecasts for a nearby station and depth, not a live measurement at your feet.</p></details>
+    <details><summary><strong>NOAA current station and depth</strong></summary><p class="small-note">A NOAA current station measures or predicts water movement at a specific channel or location. The nearest station may be miles away and may be in a pass or ship channel with different flow from your beach. The depth/bin identifies where the current is measured or predicted in the water column; surface and deeper currents can differ. Always compare the station name and distance with your actual fishing spot.</p></details>
+    <details><summary><strong>Freshwater flow rate and gauge height</strong></summary><p class="small-note">USGS streamflow (discharge) is the volume of water passing a point each second, usually shown in cubic feet per second (cfs). A higher cfs generally means more water moving through that river or creek, but it is not the speed of water at your exact bank spot. Gauge height is the water level at that monitoring station relative to its own reference gauge—not the depth of the lake. Lakes and ponds often have no current gauge; wind, inflowing creeks, dam releases, and outlets can still create localized movement. If no nearby gauge exists, the app will say so rather than invent a current reading.</p></details>
     <details><summary><strong>Best Fishing Windows</strong></summary><p class="small-note">The app compares forecast wind, gusts, rain chance, temperature, pressure trend, and—when available—surf waves. Scores rank forecast periods against one another. They are not catch probabilities, and tide timing is not included in the current scoring model.</p></details>
     <details><summary><strong>Fishing Log and condition timeline</strong></summary><p class="small-note">Catch entries can save the latest loaded conditions automatically. The Trip Conditions Timeline lets you manually record additional readings during a trip, even when you have not caught a fish. Comparing readings with catches over time may reveal patterns, but small samples can be misleading.</p></details>
   </div>
@@ -979,8 +994,112 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     } else {['seaWave','seaPeriod','seaDirection','seaTemp'].forEach(id=>setCondition(id,'Unavailable'));}
     conditionStatus.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.';
     renderBaitHelp();
-    if(fishingMode==='surf')loadNearbyTides(lat,lon,document.getElementById('conditionDate').value).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
+    if(fishingMode==='surf'){
+      loadNOAAWaterCurrent(lat,lon).catch(e=>setWaterCurrentUnavailable('NOAA current data unavailable: '+e.message));
+      loadNearbyTides(lat,lon,document.getElementById('conditionDate').value).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
+    } else {
+      loadUSGSWaterCurrent(lat,lon).catch(e=>setWaterCurrentUnavailable('USGS flow data unavailable: '+e.message));
+    }
   }
+  function setWaterCurrentUnavailable(message){
+    ['waterCurrentState','waterCurrentSpeed','waterCurrentDirection','waterCurrentNext'].forEach(id=>setCondition(id,'Unavailable'));
+    setCondition('waterCurrentStation',message);
+    setCondition('waterCurrentCaveat','No reliable nearby measurement or prediction was returned. The app will not estimate a current speed or direction.');
+  }
+  const waterCurrentCompass=deg=>['N','NE','E','SE','S','SW','W','NW'][Math.round((((Number(deg)%360)+360)%360)/45)%8]+' ('+Math.round(Number(deg))+'°)';
+  const milesBetween=(a,b)=>{const rad=x=>x*Math.PI/180,dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon),h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 3958.8*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));};
+  async function loadNOAAWaterCurrent(lat,lon){
+    setCondition('waterCurrentIntro','Finding the nearest NOAA tidal-current prediction station…');
+    const response=await fetch('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=currentpredictions&units=english');
+    if(!response.ok)throw Error('Station list returned HTTP '+response.status);
+    const data=await response.json(),stations=data.stations||[];
+    const candidates=stations.filter(x=>x.id&&x.type!=='W'&&Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lng)))
+      .map(x=>({...x,distance:milesBetween({lat,lon},{lat:Number(x.lat),lon:Number(x.lng)})}))
+      .filter(x=>x.distance<=50).sort((a,b)=>a.distance-b.distance);
+    if(!candidates.length)throw Error('No NOAA current-prediction station was found within 50 miles.');
+    const station=candidates[0],today=localDate(new Date()).replace(/-/g,'');
+    const params=new URLSearchParams({date:'today',station:station.id,product:'currents_predictions',time_zone:'lst_ldt',units:'english',application:'MyFishingReference',format:'json'});
+    if(station.currbin)params.set('bin',String(station.currbin));
+    if(station.type==='H'){params.set('interval','10');params.set('vel_type','speed_dir');}
+    else params.set('interval','max_slack');
+    const resultResponse=await fetch('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?'+params.toString());
+    if(!resultResponse.ok)throw Error('Current prediction request returned HTTP '+resultResponse.status);
+    const result=await resultResponse.json();
+    if(result.error)throw Error(result.error.message||'NOAA did not return current predictions for this station.');
+    const rows=result.current_predictions?.cp||result.current_predictions?.predictions||[];
+    if(!rows.length)throw Error('No current predictions were returned for '+station.name+'.');
+    const now=Date.now(),future=rows.map(x=>({...x,when:new Date(String(x.t||x.Time||'').replace(' ','T')+(String(x.t||x.Time||'').includes('Z')?'':'-06:00'))})).filter(x=>Number.isFinite(x.when.getTime())).sort((a,b)=>a.when-b.when);
+    const current=future.filter(x=>x.when.getTime()>=now-30*60000)[0]||future[future.length-1];
+    let phase='Tidal current forecast',speed='—',direction='Not provided',next='—',nextLabel='Next prediction';
+    if(station.type==='H'&&current){
+      const sp=Number(current.Speed),dir=Number(current.Direction);
+      if(Number.isFinite(sp))speed=sp.toFixed(2)+' kt';
+      if(Number.isFinite(dir))direction=waterCurrentCompass(dir);
+      phase='Predicted current';
+      next=current.when.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+    }else{
+      const eventRows=future.filter(x=>x.type||x.Velocity_Major!==undefined);
+      const upcoming=eventRows.filter(x=>x.when.getTime()>=now-30*60000);
+      const event=upcoming[0]||eventRows[eventRows.length-1];
+      if(event){
+        const kind=String(event.type||'').toLowerCase();
+        const vel=Number(event.Velocity_Major);
+        phase=kind==='slack'?'Slack water':kind==='flood'?'Flood (incoming)':kind==='ebb'?'Ebb (outgoing)':Number.isFinite(vel)?(vel>0?'Flood (incoming)':vel<0?'Ebb (outgoing)':'Slack water'):'Current event';
+        if(Number.isFinite(vel))speed=Math.abs(vel).toFixed(2)+' kt';
+        const bearing=vel>=0?Number(event.meanFloodDir):Number(event.meanEbbDir);
+        if(Number.isFinite(bearing))direction=waterCurrentCompass(bearing);
+        next=event.when.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+        nextLabel='Event time';
+      }
+    }
+    setCondition('waterCurrentState',phase);
+    setCondition('waterCurrentStateLabel','Tidal-current phase');
+    setCondition('waterCurrentSpeed',speed);
+    setCondition('waterCurrentSpeedLabel','Predicted speed');
+    setCondition('waterCurrentDirection',direction);
+    setCondition('waterCurrentNext',next);
+    setCondition('waterCurrentNextLabel',nextLabel);
+    setCondition('waterCurrentIntro','NOAA tidal-current prediction · '+(station.type==='H'?'harmonic station':'subordinate station'));
+    setCondition('waterCurrentStation','Nearest station: '+station.name+' · '+station.distance.toFixed(1)+' mi away · '+(station.depth!==null?'prediction depth '+station.depth+' ft':'depth not specified')+'.');
+    setCondition('waterCurrentCaveat','This is a station prediction, not a live reading at your exact beach or pass. Current can vary across channels, guts, and shoreline structure. Check the station location before relying on it.');
+  }
+  async function loadUSGSWaterCurrent(lat,lon){
+    setCondition('waterCurrentIntro','Searching nearby USGS stream gauges for measured flow…');
+    const deltaLat=0.35,deltaLon=0.45;
+    const bbox=[lon-deltaLon,lat-deltaLat,lon+deltaLon,lat+deltaLat].join(',');
+    const siteUrl='https://waterservices.usgs.gov/nwis/site/?format=rdb&bBox='+encodeURIComponent(bbox)+'&siteType=ST&siteStatus=active&hasDataTypeCd=iv&parameterCd=00060';
+    const siteResponse=await fetch(siteUrl);
+    if(!siteResponse.ok)throw Error('USGS station search returned HTTP '+siteResponse.status);
+    const lines=(await siteResponse.text()).split(/\r?\n/).filter(x=>x&&!x.startsWith('#'));
+    const headerIndex=lines.findIndex(x=>x.startsWith('agency_cd\t'));
+    if(headerIndex<0)throw Error('USGS returned no nearby stream-gauge list.');
+    const headers=lines[headerIndex].split('\t');
+    const col=name=>headers.indexOf(name);
+    const candidates=lines.slice(headerIndex+2).map(line=>{const c=line.split('\t');return {site:c[col('site_no')],name:c[col('station_nm')],lat:Number(c[col('dec_lat_va')]),lon:Number(c[col('dec_long_va')])};})
+      .filter(x=>x.site&&Number.isFinite(x.lat)&&Number.isFinite(x.lon))
+      .map(x=>({...x,distance:milesBetween({lat,lon},{lat:x.lat,lon:x.lon})})).sort((a,b)=>a.distance-b.distance);
+    if(!candidates.length)throw Error('No active USGS stream gauge with flow data was found in the nearby search area.');
+    const station=candidates[0];
+    const ivUrl='https://waterservices.usgs.gov/nwis/iv/?format=json&sites='+encodeURIComponent(station.site)+'&parameterCd=00060,00065&period=PT6H';
+    const ivResponse=await fetch(ivUrl);
+    if(!ivResponse.ok)throw Error('USGS flow request returned HTTP '+ivResponse.status);
+    const iv=await ivResponse.json(),series=iv.value?.timeSeries||[];
+    const read=code=>{const ts=series.find(x=>x.variable?.variableCode?.some(v=>v.value===code));const values=ts?.values?.[0]?.value||[];const last=values.filter(v=>v.value!==''&&v.value!==null).slice(-1)[0];return last?{value:Number(last.value),time:last.dateTime}:null;};
+    const flow=read('00060'),height=read('00065');
+    if(!flow&&!height)throw Error('The nearest USGS station did not return a recent flow or gauge-height reading.');
+    setCondition('waterCurrentState',flow?flow.value.toLocaleString()+' cfs':'Not reported');
+    setCondition('waterCurrentStateLabel','Streamflow (volume)');
+    setCondition('waterCurrentSpeed',height?height.value.toFixed(2)+' ft':'Not reported');
+    setCondition('waterCurrentSpeedLabel','Gauge height');
+    setCondition('waterCurrentDirection','Not measured');
+    setCondition('waterCurrentNext','—');
+    setCondition('waterCurrentNextLabel','Next update');
+    setCondition('waterCurrentIntro','USGS measured stream conditions · most recent available reading');
+    setCondition('waterCurrentStation',station.name+' · '+station.distance.toFixed(1)+' mi away · Gauge '+station.site+'.');
+    const stamp=flow?.time||height?.time;
+    setCondition('waterCurrentCaveat','Streamflow is water volume passing the gauge, not current speed at your fishing bank. Gauge height is relative to that gauge’s reference, not lake depth. Latest reading: '+(stamp?new Date(stamp).toLocaleString():'time unavailable')+'. Lakes and ponds may have wind-driven movement without a nearby stream gauge.');
+  }
+
   async function findConditionPlace() {
     const q=document.getElementById('conditionPlace').value.trim();
     if(!q){conditionStatus.textContent='Enter a fishing location first.';return;}
