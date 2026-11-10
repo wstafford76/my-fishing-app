@@ -487,7 +487,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <h3 style="color:var(--navy);margin:0 0 4px">Bait & Local Fishing Reports</h3>
     <p class="small-note">Recommendations are separated by your selected fishing location and fishing style. Use current report links to check what anglers are recently reporting; general bait ideas below are suggestions, not verified local catches.</p>
     <div class="conditions-location" role="group" aria-label="Bait recommendation fishing type">
-      <button class="action" id="baitFreshwaterMode" type="button" aria-pressed="true">Freshwater · Bass</button>
+      <button class="action" id="baitFreshwaterMode" type="button" aria-pressed="true">Freshwater</button>
       <button class="action secondary" id="baitSurfMode" type="button" aria-pressed="false">Surf · Gulf Coast</button>
     </div>
     <p id="baitLocationLabel" class="catch-meta">Select a location in Fishing Conditions to personalize this section.</p>
@@ -782,7 +782,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     cards.innerHTML='';links.innerHTML='';
     const place=conditionCoords?.label||document.getElementById('conditionPlace').value.trim();
     const surf=baitFishingMode==='surf';
-    label.textContent=place?(place+' · '+(surf?'Surf / Gulf Coast':'Freshwater / Bass')):'No fishing location selected yet.';
+    label.textContent=place?(place+' · '+(surf?'Surf / Gulf Coast':'Freshwater')):'No fishing location selected yet.';
     const ideas=surf?[
       ['Live bait','Live shrimp, finger mullet, and croaker where locally available. Match bait size to target species and current.'],
       ['Cut bait','Cut mullet or crab can be options for drum and other larger bottom-feeding fish.'],
