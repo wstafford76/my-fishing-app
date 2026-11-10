@@ -904,6 +904,10 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   });
   async function loadConditions(lat,lon,label) {
     conditionCoords={lat,lon,label};
+    // San Luis Pass is a coastal fishing location; keep its conditions in Surf mode.
+    const isSanLuisPass=/san luis pass/i.test(String(label||'')) ||
+      (Math.abs(lat-29.0818)<0.025 && Math.abs(lon-(-95.1252))<0.025);
+    if(isSanLuisPass && fishingMode!=='surf') setFishingMode('surf');
     lastConditionSnapshot=null;
     if(fishingMap)updateFishingMap(lat,lon,label);
     conditionStatus.textContent='Loading weather and marine conditions…';
