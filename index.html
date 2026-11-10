@@ -1307,10 +1307,10 @@ on>
       const landmarkResponse=await fetch(landmarkUrl,{headers:{'Accept':'application/json'}});
       if(!landmarkResponse.ok)throw Error('The landmark search service is temporarily unavailable. Try again or use GPS.');
       const landmarks=await landmarkResponse.json();
-      const texasLandmarks=(landmarks||[]).filter(p=>/texas/i.test([p.display_name,p.address?.state].join(' ')));
-      if(!texasLandmarks.length)throw Error('Could not find that named place. Try adding “Texas” to its name, or use GPS while you are there.');
-      const p=texasLandmarks[0];
-      await loadConditions(Number(p.lat),Number(p.lon),p.name||p.display_name.split(',')[0]+', Texas',q);
+      const usLandmarks=landmarks||[];
+      if(!usLandmarks.length)throw Error('Could not find that named place in the United States. Add the state to narrow the search, or use GPS while you are there.');
+      const p=usLandmarks[0];
+      await loadConditions(Number(p.lat),Number(p.lon),p.name||p.display_name.split(',')[0]+', '+(p.address?.state||'USA'),q);
     }catch(e){conditionStatus.textContent=e.message||'Could not find that location. Try a nearby town.';}
   }
   document.getElementById('conditionSearch').addEventListener('click',findConditionPlace);
