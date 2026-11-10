@@ -1015,33 +1015,6 @@ on>
     conditionStatus.textContent='Loading weather and marine conditions…';
     conditionResults.hidden=false;
     setCondition('conditionLocationName',label+' · '+lat.toFixed(3)+', '+lon.toFixed(3));
-    const weatherUrl=(lat,lon,label,hint){
-    const named=classifyFishingLocationText((hint||'')+' '+(label||''));
-    if(named)return named;
-    try{
-      const url='https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&zoom=18&addressdetails=1';
-      const response=await fetch(url,{headers:{'Accept':'application/json'}});
-      if(!response.ok)throw Error('Reverse geocoding unavailable');
-      const place=await response.json(),a=place.address||{},feature=[place.category,place.type,place.addresstype,place.name,place.display_name,a.natural,a.water,a.waterway,a.leisure,a.amenity,a.landuse,a.place].filter(Boolean).join(' ').toLowerCase();
-      if(/\b(beach|sea|ocean|gulf|bay|strait|estuary|harbour|harbor|inlet|coast|tidal|salt|pier|jetty|marina|channel)\b/.test(feature))return 'surf';
-      if(/\b(lake|pond|reservoir|river|stream|creek|canal|waterfall|bayou)\b/.test(feature))return 'freshwater';
-    }catch(e){}
-    return null;
-  }
-  async function loadConditions(lat,lon,label,modeHint='') {
-    conditionCoords={lat,lon,label};
-    const detectedMode=await detectFishingMode(lat,lon,label,modeHint);
-    if(detectedMode){
-      setFishingMode(detectedMode);
-      conditionStatus.textContent='Location identified as '+(detectedMode==='surf'?'saltwater / coastal':'freshwater')+'. Loading conditions…';
-    }else{
-      conditionStatus.textContent='Could not identify whether this spot is freshwater or saltwater. Keeping the current mode; select it manually if needed.';
-    }
-    lastConditionSnapshot=null;
-    if(fishingMap)updateFishingMap(lat,lon,label);
-    conditionStatus.textContent='Loading weather and marine conditions…';
-    conditionResults.hidden=false;
-    setCondition('conditionLocationName',label+' · '+lat.toFixed(3)+', '+lon.toFixed(3));
     const weatherUrl='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,surface_pressure,pressure_msl&hourly=temperature_2m,precipitation_probability,wind_speed_10m,wind_gusts_10m,pressure_msl,weather_code&daily=sunrise,sunset&past_days=1&forecast_days=2&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto';
     const marineUrl='https://marine-api.open-meteo.com/v1/marine?latitude='+lat+'&longitude='+lon+'&current=wave_height,wave_period,wave_direction,sea_surface_temperature&length_unit=imperial&temperature_unit=fahrenheit&timezone=auto';
     const results=await Promise.allSettled([fetch(weatherUrl).then(r=>{if(!r.ok)throw Error('Weather service unavailable');return r.json()}),fetch(marineUrl).then(r=>{if(!r.ok)throw Error('Marine service unavailable');return r.json()})]);
