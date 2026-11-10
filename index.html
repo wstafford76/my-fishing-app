@@ -487,6 +487,12 @@ data-search="butchers bite bait lures artificial bait lure color selection water
           <button type="button" data-delete="${index}" aria-label="Delete ${escapeHtml(item.name)}">Delete</button>
         </div>
       </article>`).join('') : '<p class="empty">No inventory items match that search.</p>';
+    if (q && filtered.length) {
+      requestAnimationFrame(() => {
+        const firstMatch = listEl.querySelector('.inventory-item');
+        if (firstMatch) firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }
   }
   function openEditor(index=-1) {
     editingIndex = index;
