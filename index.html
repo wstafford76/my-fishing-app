@@ -1352,7 +1352,8 @@ on>
     const tide=await tideResponse.json();
     if(tide.error)throw Error('NOAA station '+station.id+': '+(tide.error.message||'prediction error'));
     const asUtc=t=>new Date(t.replace(' ','T')+'Z');
-    const events=(tide.predictions||[]).map(x=>({...x,when:asUtc(x.t)})).filter(x=>x.when.toLocaleDateString('en-CA')===chosen).sort((a,b)=>a.when-b.when);
+    const allEvents=(tide.predictions||[]).map(x=>({...x,when:asUtc(x.t)})).filter(x=>Number.isFinite(x.when.getTime())).sort((a,b)=>a.when-b.when);
+    const events=allEvents.filter(x=>x.when.toLocaleDateString('en-CA')===chosen);
     const localTime=d=>d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone});
     const eventLabel=x=>(x.type==='H'?'High':'Low')+' · '+localTime(x.when)+' · '+x.v+' ft';
     const card=x=>'<article class="stat"><strong>'+localTime(x.when)+'</strong><span>'+(x.type==='H'?'High tide':'Low tide')+' · '+x.v+' ft</span></article>';
@@ -1370,6 +1371,7 @@ on>
       if(nextTurn>end)summary+=' It remains '+(rising?'incoming':'outgoing')+' through 10 AM.';
     }
     setCondition('tideMorningSummary',summary);
+    return {events:allEvents,station:station.name};
   }
 
   const conditionDate=document.getElementById('conditionDate');
@@ -1418,7 +1420,7 @@ on>
     const status=document.getElementById('bestWindowsStatus'),out=document.getElementById('bestWindowsResults');
     if(!conditionCoords){status.textContent='Find a fishing location or use GPS first.';return;}
     const selected=conditionDate.value||localDate(new Date()),{lat,lon}=conditionCoords;
-    status.textContent='Comparing hourly weather'+(fishingMode==='surf'?' and marine conditions':' and pressure')+'…';out.hidden=true;
+    status.textContent='Comparing hourly weather'+(fishingMode==='surf'?' marine conditions and NOAA tide movement':' and pressure')+'…';out.hidden=true;
     try{
       const hourly='temperature_2m,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,pressure_msl';
       const wUrl='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&hourly='+hourly+'&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&forecast_days=16&timezone=auto';
@@ -1426,6 +1428,8 @@ on>
       const settled=await Promise.allSettled([fetch(wUrl).then(r=>{if(!r.ok)throw Error('Weather forecast unavailable');return r.json()}),fishingMode==='surf'?fetch(mUrl).then(r=>{if(!r.ok)throw Error('Marine forecast unavailable');return r.json()}):Promise.resolve(null)]);
       if(settled[0].status!=='fulfilled')throw settled[0].reason;
       const weather=settled[0].value.hourly,marine=settled[1].status==='fulfilled'&&settled[1].value?settled[1].value.hourly:null;
+      let tideEvents=[],tideStationName=null,tideAvailable=false;
+      if(fishingMode==='surf'){try{const tideData=await loadNearbyTides(lat,lon,selected);tideEvents=tideData.events;tideStationName=tideData.station;tideAvailable=tideEvents.length>=2;}catch(e){tideAvailable=false;}}
       const pressureTrend=weather.pressure_msl;
       const rows=[];
       for(let i=0;i<weather.time.length;i++){
@@ -1444,6 +1448,16 @@ on>
           if(wave!==null){const w=wave<=2?10:wave<=3.5?3:wave<=5?-10:-18;score+=w;reasons.push('Waves '+wave.toFixed(1)+' ft');if(w<0)risks.push('Rough surf');}
           if(period!==null&&period>=7&&period<=11)score+=3;
         }
+        if(fishingMode==='surf'&&tideAvailable){
+          const hourTime=new Date(weather.time[i]);
+          const previous=tideEvents.filter(t=>t.when<=hourTime).slice(-1)[0],next=tideEvents.find(t=>t.when>hourTime);
+          if(previous&&next){
+            const minutesAfter=(hourTime-previous.when)/60000,minutesBefore=(next.when-hourTime)/60000;
+            const phase=next.type==='H'?'rising':'falling';
+            if(minutesAfter<=30||minutesBefore<=30){score+=1;reasons.push('Near '+(next.type==='H'?'high':'low')+' tide; current may be slowing');}
+            else {const tideBonus=(minutesAfter<90||minutesBefore<90)?4:8;score+=tideBonus;reasons.push((phase==='rising'?'Rising':'Falling')+' tide · moving water');}
+          }
+        }
         rows.push({hour,score:Math.max(0,Math.min(100,Math.round(score))),reasons,risks});
       }
       const windows=[];
@@ -1452,7 +1466,7 @@ on>
       if(!windows.length){status.textContent='No hourly forecast data was returned for that date.';return;}
       const fmtHour=h=>new Date(selected+'T'+String(h).padStart(2,'0')+':00:00').toLocaleTimeString([],{hour:'numeric'});
       const confidence=selected===localDate(new Date())?'Moderate':'Low to moderate';
-      out.innerHTML='<h4 style="color:var(--navy);margin:14px 0 8px">Top time windows · '+new Date(selected+'T12:00:00').toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'})+'</h4>'+windows.slice(0,4).map((w,n)=>'<article class="stat" style="margin:8px 0"><strong>'+(n+1)+'. '+fmtHour(w.start)+'–'+fmtHour(w.end)+' · '+w.score+'/100</strong><span>'+(w.reasons.join(' · ')||'Mixed conditions')+(w.risks.length?' · Watch: '+w.risks.join(', '):'')+'</span></article>').join('')+'<p class="small-note">Confidence: '+confidence+'. Based on hourly Open-Meteo forecast inputs'+(fishingMode==='surf'?(marine?' and modeled marine wave data.':'; marine model data unavailable for this location.'):'; pressure trend is a weather indicator, not a direct fish-activity measure.')+' Tide timing is not included in this first scoring pass. Scores are relative condition rankings, not catch probabilities.</p>';
+      out.innerHTML='<h4 style="color:var(--navy);margin:14px 0 8px">Top time windows · '+new Date(selected+'T12:00:00').toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'})+'</h4>'+windows.slice(0,4).map((w,n)=>'<article class="stat" style="margin:8px 0"><strong>'+(n+1)+'. '+fmtHour(w.start)+'–'+fmtHour(w.end)+' · '+w.score+'/100</strong><span>'+(w.reasons.join(' · ')||'Mixed conditions')+(w.risks.length?' · Watch: '+w.risks.join(', '):'')+'</span></article>').join('')+'<p class="small-note">Confidence: '+confidence+'. Based on hourly Open-Meteo forecast inputs'+(fishingMode==='surf'?(marine?' and modeled marine wave data.':'; marine model data unavailable for this location.'):'; pressure trend is a weather indicator, not a direct fish-activity measure.')+(fishingMode==='surf'?(tideAvailable?' NOAA tide timing from '+tideStationName+' is included; moving-water periods receive a modest boost and tide turns are treated as possible slack-water periods.':' NOAA tide predictions were unavailable, so tide timing was not scored.'):' Tide timing is not applicable to freshwater.')+' Scores are relative condition rankings, not catch probabilities.</p>';
       out.hidden=false;status.textContent='Ranking complete. Recheck closer to your trip as forecasts change.';
     }catch(e){status.textContent='Could not calculate fishing windows: '+(e.message||'forecast unavailable');}
   }
