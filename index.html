@@ -840,8 +840,13 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   function setFishingMode(mode){
     fishingMode=mode;
     const fresh=mode==='freshwater';
-    document.getElementById('freshwaterConditions').hidden=!fresh;
-    document.getElementById('surfConditions').hidden=fresh;
+    const freshwaterPanel=document.getElementById('freshwaterConditions');
+    const surfPanel=document.getElementById('surfConditions');
+    freshwaterPanel.hidden=!fresh;
+    surfPanel.hidden=fresh;
+    // Set display explicitly as well, so layout CSS cannot override the hidden state.
+    freshwaterPanel.style.display=fresh?'':'none';
+    surfPanel.style.display=fresh?'none':'';
     document.getElementById('freshwaterMode').className='action'+(fresh?'':' secondary');
     document.getElementById('surfMode').className='action'+(!fresh?'':' secondary');
     document.getElementById('freshwaterMode').setAttribute('aria-pressed',String(fresh));
@@ -907,7 +912,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     // San Luis Pass is a coastal fishing location; keep its conditions in Surf mode.
     const isSanLuisPass=/san luis pass/i.test(String(label||'')) ||
       (Math.abs(lat-29.0818)<0.025 && Math.abs(lon-(-95.1252))<0.025);
-    if(isSanLuisPass && fishingMode!=='surf') setFishingMode('surf');
+    if(isSanLuisPass) setFishingMode('surf');
     lastConditionSnapshot=null;
     if(fishingMap)updateFishingMap(lat,lon,label);
     conditionStatus.textContent='Loading weather and marine conditions…';
