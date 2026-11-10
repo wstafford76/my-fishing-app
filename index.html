@@ -1028,7 +1028,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     if(result.error)throw Error(result.error.message||'NOAA did not return current predictions for this station.');
     const rows=result.current_predictions?.cp||result.current_predictions?.predictions||[];
     if(!rows.length)throw Error('No current predictions were returned for '+station.name+'.');
-    const now=Date.now(),future=rows.map(x=>({...x,when:new Date(String(x.t||x.Time||'').replace(' ','T')+(String(x.t||x.Time||'').includes('Z')?'':'-06:00'))})).filter(x=>Number.isFinite(x.when.getTime())).sort((a,b)=>a.when-b.when);
+    const now=Date.now(),future=rows.map(x=>({...x,when:new Date(String(x.t||x.Time||'').replace(' ','T'))})).filter(x=>Number.isFinite(x.when.getTime())).sort((a,b)=>a.when-b.when);
     const current=future.filter(x=>x.when.getTime()>=now-30*60000)[0]||future[future.length-1];
     let phase='Tidal current forecast',speed='—',direction='Not provided',next='—',nextLabel='Next prediction';
     if(station.type==='H'&&current){
@@ -1079,7 +1079,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       const id=p.monitoring_location_id;
       if(!bySite.has(id))bySite.set(id,{id,lon:Number(coords[0]),lat:Number(coords[1]),readings:{}});
       const site=bySite.get(id),code=String(p.parameter_code||'');
-      if(code==='00060'||code==='00065'){
+      if((code==='00060'||code==='00065')&&Number.isFinite(Number(p.value))){
         const old=site.readings[code];
         if(!old||new Date(p.time)>new Date(old.time))site.readings[code]={value:Number(p.value),time:p.time,unit:p.unit_of_measure};
       }
