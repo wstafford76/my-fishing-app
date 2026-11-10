@@ -399,8 +399,10 @@ on>
     <label for="conditionDate" style="font-weight:600;color:var(--navy)">Plan a trip date (forecast up to 16 days):</label>
     <input id="conditionDate" type="date" aria-label="Trip date">
     <button class="action secondary" id="conditionForecast" type="button">Check trip forecast</button>
+    <button class="action secondary" id="tideScheduleButton" type="button">Show tide schedule</button>
   </div>
   <div id="conditionForecastStatus" class="small-note" role="status">Choose a location, then select a date to plan your trip.</div>
+  <div id="tideScheduleStatus" class="small-note" role="status">Select a location and date to view high- and low-tide predictions without loading the weather forecast.</div>
   <div id="conditionForecastResults" hidden>
     <h3 id="forecastDateTitle" style="color:var(--navy);margin:16px 0 8px">Trip forecast</h3>
     <div class="conditions-grid">
@@ -1367,6 +1369,19 @@ on>
     setCondition('tideMorningSummary',summary);
   }
 
+  document.getElementById('tideScheduleButton').addEventListener('click',async()=>{
+    const status=document.getElementById('tideScheduleStatus');
+    if(!conditionCoords){status.textContent='Find a fishing location or use GPS before checking tide predictions.';return;}
+    const selected=conditionDate.value;
+    if(!selected){status.textContent='Choose a trip date first.';return;}
+    if(selected<today||selected>lastForecastDay){status.textContent='Choose a date within the available 16-day planning window.';return;}
+    if(fishingMode!=='surf'){status.textContent='Tide predictions are available in saltwater mode. Confirm the fishing location or switch to Saltwater.';return;}
+    status.textContent='Loading NOAA high- and low-tide predictions…';
+    try{
+      await loadNearbyTides(conditionCoords.lat,conditionCoords.lon,selected);
+      status.textContent='NOAA tide schedule loaded for '+new Date(selected+'T12:00:00').toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'})+'. See all predicted high and low tides below.';
+    }catch(e){status.textContent='Could not load the tide schedule: '+(e.message||'NOAA service unavailable');}
+  });
   const conditionDate=document.getElementById('conditionDate');
   const localDate=d=>{const x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,10);};
   const today=localDate(new Date()),lastForecastDay=localDate(new Date(Date.now()+15*86400000));
