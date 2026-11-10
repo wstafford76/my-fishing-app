@@ -348,6 +348,13 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <article class="stat"><strong id="seaDirection">—</strong><span>Wave direction</span></article>
       <article class="stat"><strong id="seaTemp">—</strong><span>Sea temperature</span></article>
     </div>
+    <h3 style="color:var(--navy);margin:20px 0 8px">Weather satellite · NOAA GOES-East</h3>
+    <p class="small-note">Latest GeoColor satellite image for the Southern Plains, including Texas and the northwestern Gulf. Daytime imagery is true color; nighttime imagery uses infrared.</p>
+    <div style="background:#eef2f6;border:1px solid var(--line);border-radius:12px;padding:10px">
+      <img id="weatherSatelliteImage" src="https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR/sp/GEOCOLOR/600x600.jpg" alt="Latest NOAA GOES-East GeoColor satellite image of the Southern Plains and Texas Gulf Coast" loading="lazy" style="display:block;width:100%;max-width:600px;height:auto;margin:0 auto;border-radius:8px">
+      <p id="satelliteUpdated" class="small-note" style="text-align:center;margin:8px 0 4px">Satellite imagery provided by NOAA/NESDIS/STAR · refreshes every 5 minutes</p>
+      <p style="text-align:center;margin:4px 0"><a href="https://www.star.nesdis.noaa.gov/GOES/sector_band.php?sat=G19&band=GEOCOLOR&length=36&sector=sp" target="_blank" rel="noopener">Open animated 3-hour satellite loop</a></p>
+    </div>
     <h3 id="tideHeading" style="color:var(--navy);margin:20px 0 8px">Tides for today</h3>
     <p id="tideDateNote" class="small-note">All predicted high and low tides for the selected day.</p>
     <p id="tideStation" class="small-note">Finding the nearest NOAA tide station…</p>
@@ -634,6 +641,14 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   const conditionStatus = document.getElementById('conditionStatus');
   const conditionResults = document.getElementById('conditionResults');
   let conditionCoords = null;
+  const satelliteImage=document.getElementById('weatherSatelliteImage');
+  function refreshSatellite(){
+    if(!satelliteImage)return;
+    satelliteImage.src='https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR/sp/GEOCOLOR/600x600.jpg?t='+Date.now();
+    setCondition('satelliteUpdated','Satellite image refreshed '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+' · NOAA/NESDIS/STAR');
+  }
+  refreshSatellite();
+  setInterval(refreshSatellite,5*60*1000);
   const setCondition = (id,value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
   const fmt = (v,unit,digits=0) => Number.isFinite(v) ? Number(v).toFixed(digits)+unit : '—';
   const compass = v => Number.isFinite(v) ? ['N','NE','E','SE','S','SW','W','NW'][Math.round((((v%360)+360)%360)/45)%8]+' ('+Math.round(v)+'°)' : '—';
