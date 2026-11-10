@@ -349,12 +349,13 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <article class="stat"><strong id="seaTemp">—</strong><span>Sea temperature</span></article>
     </div>
     <h3 id="tideHeading" style="color:var(--navy);margin:20px 0 8px">Tides for today</h3>
-    <p id="tideDateNote" class="small-note">Showing predicted high and low tides for today.</p>
+    <p id="tideDateNote" class="small-note">All predicted high and low tides for the selected day.</p>
     <p id="tideStation" class="small-note">Finding the nearest NOAA tide station…</p>
-    <div class="conditions-grid">
-      <article class="stat"><strong id="tideNextHigh">—</strong><span id="tideHighLabel">High tide today</span></article>
-      <article class="stat"><strong id="tideNextLow">—</strong><span id="tideLowLabel">Low tide today</span></article>
-    </div>
+    <h4 style="color:var(--navy);margin:12px 0 6px">Your usual morning window · 5–10 AM</h4>
+    <p id="tideMorningSummary" class="small-note">Tide movement during your morning fishing window will appear here.</p>
+    <div id="tideMorningEvents" class="conditions-grid"></div>
+    <h4 style="color:var(--navy);margin:16px 0 6px">All tides throughout the day</h4>
+    <div id="tideAllEvents" class="conditions-grid"></div>
     <p class="small-note">Weather and marine conditions are estimates for the selected coordinates. Tide predictions come from the nearest available NOAA station and may not represent conditions at your exact shoreline.</p>
   </div>
 </section>
@@ -714,12 +715,25 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     if(!tideResponse.ok)throw Error('NOAA tide service returned HTTP '+tideResponse.status);
     const tide=await tideResponse.json();
     if(tide.error)throw Error('NOAA station '+station.id+': '+(tide.error.message||'prediction error'));
-    const events=tide.predictions||[];
+    const events=(tide.predictions||[]).map(x=>({...x,when:asUtc(x.t)})).filter(x=>x.when.toLocaleDateString('en-CA')===chosen).sort((a,b)=>a.when-b.when);
     const asUtc=t=>new Date(t.replace(' ','T')+'Z');
-    const sameLocalDay=x=>asUtc(x.t).toLocaleDateString('en-CA')===chosen;
-    const high=events.find(x=>x.type==='H'&&sameLocalDay(x)),low=events.find(x=>x.type==='L'&&sameLocalDay(x));
-    const display=x=>x?asUtc(x.t).toLocaleString([], {weekday:'short',hour:'numeric',minute:'2-digit',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone})+' · '+x.v+' ft':'Not available';
-    setCondition('tideNextHigh',display(high));setCondition('tideNextLow',display(low));
+    const localTime=d=>d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone});
+    const eventLabel=x=>(x.type==='H'?'High':'Low')+' · '+localTime(x.when)+' · '+x.v+' ft';
+    const card=x=>'<article class="stat"><strong>'+localTime(x.when)+'</strong><span>'+(x.type==='H'?'High tide':'Low tide')+' · '+x.v+' ft</span></article>';
+    const all=document.getElementById('tideAllEvents'),morning=document.getElementById('tideMorningEvents');
+    all.innerHTML=events.length?events.map(card).join(''):'<p class="small-note">No high/low predictions returned for this date.</p>';
+    const morningEvents=events.filter(x=>{const h=Number(new Intl.DateTimeFormat('en-US',{hour:'numeric',hourCycle:'h23',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone}).format(x.when));return h>=5&&h<=10;});
+    morning.innerHTML=morningEvents.length?morningEvents.map(card).join(''):'<p class="small-note">No tide turn is predicted between 5 and 10 AM.</p>';
+    const start=new Date(chosen+'T05:00:00'),end=new Date(chosen+'T10:00:00');
+    const before=events.filter(x=>x.when<=start).slice(-1)[0],after=events.find(x=>x.when>start);
+    let summary='Tide trend from 5–10 AM cannot be determined from the returned tide turns.';
+    if(before&&after){
+      const rising=after.type==='H';
+      const nextTurn=after.when;
+      summary=(rising?'Incoming tide (rising)':'Outgoing tide (falling)')+' at 5 AM; '+(rising?'high':'low')+' tide around '+localTime(nextTurn)+'.';
+      if(nextTurn>end)summary+=' It remains '+(rising?'incoming':'outgoing')+' through 10 AM.';
+    }
+    setCondition('tideMorningSummary',summary);
   }
 
   const conditionDate=document.getElementById('conditionDate');
