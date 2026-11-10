@@ -917,10 +917,27 @@ on>
   }
   function updateFishingMap(lat,lon,label){
     if(!fishingMap)return;const point=[lat,lon];
-    if(!mapMarker)mapMarker=L.marker(point).addTo(fishingMap);else mapMarker.setLatLng(point);
-    mapMarker.bindPopup(String(label||'Selected fishing spot')).openPopup();
+    if(!mapMarker){
+      mapMarker=L.marker(point,{draggable:true}).addTo(fishingMap);
+      mapMarker.on('dragend',async()=>{
+        const moved=mapMarker.getLatLng();
+        const spotLabel=(conditionCoords&&conditionCoords.label)||label||'Selected fishing spot';
+        mapStatus.textContent='New spot selected · loading conditions…';
+        try{
+          await loadConditions(moved.lat,moved.lng,spotLabel);
+          mapStatus.textContent='Conditions loaded for your exact map point · '+moved.lat.toFixed(5)+', '+moved.lng.toFixed(5);
+          mapMarker.bindPopup('<strong>'+escapeHtml(spotLabel)+'</strong><br>Exact fishing point<br>'+moved.lat.toFixed(5)+', '+moved.lng.toFixed(5)).openPopup();
+        }catch(error){
+          mapStatus.textContent='Point moved, but conditions could not load: '+error.message;
+        }
+      });
+    }else{
+      mapMarker.setLatLng(point);
+      if(mapMarker.dragging&&!mapMarker.dragging.enabled())mapMarker.dragging.enable();
+    }
+    mapMarker.bindPopup(String(label||'Selected fishing spot')+'<br><small>Drag this marker to your exact fishing spot.</small>').openPopup();
     fishingMap.setView(point,Math.max(fishingMap.getZoom(),13));
-    mapStatus.textContent='Selected: '+(label||'Fishing spot')+' · '+lat.toFixed(5)+', '+lon.toFixed(5);
+    mapStatus.textContent='Selected: '+(label||'Fishing spot')+' · '+lat.toFixed(5)+', '+lon.toFixed(5)+' · Drag the marker to fine-tune your spot.';
   }
   function renderCurrentMapOverlay(data){
     currentOverlayData=data;
