@@ -829,7 +829,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       setCondition('fcWaveDir',compass(d.wave_direction_dominant[mi]));
     } else ['fcWave','fcWavePeriod','fcWaveDir'].forEach(id=>setCondition(id,'Unavailable'));
     status.textContent='Forecast updated. Forecasts are estimates and can change as the trip date approaches.';
-    loadNearbyTides(lat,lon,selected).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
+    if(fishingMode==='surf')loadNearbyTides(lat,lon,selected).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
   }
   document.getElementById('conditionForecast').addEventListener('click',loadTripForecast);
   conditionDate.addEventListener('change',()=>{
