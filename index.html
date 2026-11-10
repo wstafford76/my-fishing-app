@@ -984,7 +984,9 @@ on>
   function classifyFishingLocationText(value){
     const text=String(value||'').toLowerCase();
     const has=words=>words.some(word=>new RegExp('(^|[^a-z])'+word+'([^a-z]|$)','i').test(text));
-    if(has(['san luis pass','surfside beach','galveston beach','bolivar peninsula','gulf of mexico','gulf coast','beach','ocean','gulf','surf','inlet','jetty','pier','estuary','tidal','saltwater','salt water','bay','harbor','harbour','ship channel']))return 'surf';
+    // City names and coastal communities take priority over generic water-body words.
+    if(has(['lake jackson','freeport texas','freeport tx','surfside beach','quintana texas','clute texas','san luis pass','galveston beach','bolivar peninsula','gulf of mexico','gulf coast']))return 'surf';
+    if(has(['beach','ocean','gulf','surf','inlet','jetty','pier','estuary','tidal','saltwater','salt water','bay','harbor','harbour','ship channel']))return 'surf';
     if(has(['lake','pond','reservoir','creek','river','stream','bayou','freshwater','fresh water','fishing pond']))return 'freshwater';
     return null;
   }
