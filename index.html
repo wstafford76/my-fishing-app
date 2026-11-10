@@ -253,6 +253,7 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
   <button class="main-tab" data-panel="inventoryPanel">Tackle Inventory</button>
   <button class="main-tab" data-panel="conditionsPanel">Fishing Conditions</button>
   <button class="main-tab" data-panel="logPanel">Fishing Log</button>
+  <button class="main-tab" data-panel="helpPanel">Help & Bait</button>
 </nav>
 <section id="guidesPanel" class="panel">
 <input
@@ -469,6 +470,30 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   <p class="small-note">Changes are saved in this browser on this device. Export a backup before clearing browser data or moving to another device.</p>
   <div id="inventoryList" class="inventory-list"></div>
 </section>
+<section id="helpPanel" class="panel" hidden>
+  <h2 style="color:var(--navy);margin:0">Help & Bait Recommendations</h2>
+  <p class="small-note">Plain-language explanations for your fishing conditions, plus location-specific bait ideas and current report searches.</p>
+  <div class="log-form">
+    <h3 style="color:var(--navy);margin:0 0 8px">Understanding Fishing Conditions</h3>
+    <details open><summary><strong>Barometric pressure</strong></summary><p class="small-note">Air pressure is shown in hectopascals (hPa). Rising means pressure is higher than it was 12 or 24 hours earlier; falling means it is lower. Stable means the change is small. Pressure is only one clue—fish do not respond to a single number in a predictable way.</p></details>
+    <details><summary><strong>3-, 12-, and 24-hour pressure changes</strong></summary><p class="small-note">These compare the current pressure with readings from those hours earlier. A positive number means pressure rose; a negative number means it fell. The 24-hour comparison gives a broader trend than the 3-hour reading.</p></details>
+    <details><summary><strong>Wind speed and direction</strong></summary><p class="small-note">Wind can move bait, change surface conditions, and affect casting. In the surf, wind direction relative to the shoreline matters as much as speed. Strong onshore wind often makes the water rougher; sheltered shorelines may fish differently.</p></details>
+    <details><summary><strong>Wave height and period</strong></summary><p class="small-note">Wave height estimates the vertical size of waves. Wave period is the time between waves. Longer-period waves can carry more energy even when wave height looks similar. These are modeled estimates, not a measurement at your exact cast.</p></details>
+    <details><summary><strong>Tides</strong></summary><p class="small-note">Incoming tide is water moving toward higher tide; outgoing tide is moving toward lower tide. Current moving through cuts, passes, drains, and channels can concentrate bait and predators. The app uses the nearest available NOAA prediction station, which may not match the exact shoreline.</p></details>
+    <details><summary><strong>Best Fishing Windows</strong></summary><p class="small-note">The app compares forecast wind, gusts, rain chance, temperature, pressure trend, and—when available—surf waves. Scores rank forecast periods against one another. They are not catch probabilities, and tide timing is not included in the current scoring model.</p></details>
+    <details><summary><strong>Fishing Log and condition timeline</strong></summary><p class="small-note">Catch entries can save the latest loaded conditions automatically. The Trip Conditions Timeline lets you manually record additional readings during a trip, even when you have not caught a fish. Comparing readings with catches over time may reveal patterns, but small samples can be misleading.</p></details>
+  </div>
+  <div class="log-form">
+    <h3 style="color:var(--navy);margin:0 0 4px">Bait & Local Fishing Reports</h3>
+    <p class="small-note">Recommendations are separated by your selected fishing location and fishing style. Use current report links to check what anglers are recently reporting; general bait ideas below are suggestions, not verified local catches.</p>
+    <p id="baitLocationLabel" class="catch-meta">Select a location in Fishing Conditions to personalize this section.</p>
+    <div id="baitRecommendations" class="conditions-grid"></div>
+    <h4 style="color:var(--navy);margin:16px 0 6px">Recent online reports for this area</h4>
+    <p id="baitReportNote" class="small-note">Load a location in Fishing Conditions, then open current report searches.</p>
+    <div id="baitReportLinks" class="inventory-actions"></div>
+    <p id="baitUpdatedAt" class="small-note">Report searches open current online results when tapped. This app does not claim a bait is locally productive unless a report actually says so.</p>
+  </div>
+</section>
 <section id="logPanel" class="panel" hidden>
   <h2 style="color:var(--navy);margin:0">Fishing Log</h2>
   <p style="color:var(--muted);margin:4px 0 12px">Record each catch, what worked, and add photos from your phone or camera.</p>
@@ -605,6 +630,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     mainTabs.forEach(t => t.classList.toggle('active', t === tab));
     document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== tab.dataset.panel);
     if(tab.dataset.panel==='conditionsPanel'){initFishingMap();if(fishingMap)setTimeout(()=>fishingMap.invalidateSize(),180);}
+    if(tab.dataset.panel==='helpPanel')renderBaitHelp();
   }));
 
   // Inventory data is seeded once; subsequent edits live in localStorage.
@@ -736,6 +762,33 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   });
   renderInventory();
 
+  function renderBaitHelp(){
+    const label=document.getElementById('baitLocationLabel'),cards=document.getElementById('baitRecommendations'),links=document.getElementById('baitReportLinks'),note=document.getElementById('baitReportNote'),updated=document.getElementById('baitUpdatedAt');
+    cards.innerHTML='';links.innerHTML='';
+    const place=conditionCoords?.label||document.getElementById('conditionPlace').value.trim();
+    const surf=fishingMode==='surf';
+    label.textContent=place?(place+' · '+(surf?'Surf / Gulf Coast':'Freshwater / Bass')):'No fishing location selected yet.';
+    const ideas=surf?[
+      ['Live bait','Live shrimp, finger mullet, and croaker where locally available. Match bait size to target species and current.'],
+      ['Cut bait','Cut mullet or crab can be options for drum and other larger bottom-feeding fish.'],
+      ['Artificial','Paddle-tail shads, shrimp imitations, and suspending or topwater plugs for active trout and redfish.']
+    ]:[
+      ['Soft plastics','Texas-rigged worms, creature baits, and stick worms are versatile starting points for pond bass.'],
+      ['Topwater','Hollow-body frogs around heavy vegetation; walking baits where open water allows.'],
+      ['Moving baits','Spinnerbaits, bladed jigs, and swimbaits can help cover water and locate active bass.']
+    ];
+    ideas.forEach(([title,body])=>{const el=document.createElement('article');el.className='stat';const strong=document.createElement('strong');strong.textContent=title;const span=document.createElement('span');span.textContent=body;el.append(strong,span);cards.append(el);});
+    if(!place){note.textContent='Choose a location in Fishing Conditions first. These are broad starting points, not local reports.';updated.textContent='Current report searches will be built around the selected place.';return;}
+    note.textContent='Searches are specific to '+place+'. Open a result to confirm its publication date, species, bait, and exact area.';
+    const terms=surf?'saltwater fishing report bait trout redfish drum':'bass fishing report bait';
+    const queries=[
+      ['Recent fishing reports',place+' '+terms+' latest fishing report'],
+      ['Angler reports & forums',place+' fishing report anglers bait'],
+      ['Bait shop reports',place+' bait shop fishing report']
+    ];
+    queries.forEach(([title,q])=>{const a=document.createElement('a');a.href='https://www.google.com/search?q='+encodeURIComponent(q)+'&tbs=qdr:m';a.target='_blank';a.rel='noopener noreferrer';a.className='action secondary';a.textContent=title;links.append(a);});
+    updated.textContent='Report searches prepared '+new Date().toLocaleString()+'. Results are refreshed by the search provider when opened; the app does not scrape or verify individual reports.';
+  }
   // Fishing Conditions: GPS/manual place, Open-Meteo weather + marine, NOAA tide predictions.
   const conditionStatus = document.getElementById('conditionStatus');
   const conditionResults = document.getElementById('conditionResults');
