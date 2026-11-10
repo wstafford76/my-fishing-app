@@ -950,7 +950,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
         hourHtml.push('<div class="hour-card"><div class="hour-time">'+hourLabel+'</div><div class="hour-icon">'+iconFor(code)+'</div><strong>'+(Number.isFinite(temp)?Math.round(temp)+'°':'—')+'</strong><small>'+(Number.isFinite(rain)?Math.round(rain)+'% rain':'')+'</small><small>'+(Number.isFinite(wind)?Math.round(wind)+' mph':'—')+(Number.isFinite(gust)?' · '+Math.round(gust)+'g':'')+'</small></div>');
       }
       document.getElementById('dashboardHourly').innerHTML=hourHtml.join('')||'<div class="hour-card">Hourly outlook unavailable</div>';
-      const pressurePoints=times.map((t,k)=>({t,v:pressures[k]})).filter(p=>p.t<=localNow&&p.t>=new Date(new Date(localNow).getTime()-24*3600000).toISOString().slice(0,13)+':00'&&Number.isFinite(p.v));
+      const pressurePoints=times.map((t,k)=>({t,v:pressures[k],index:k})).filter(p=>p.index>=Math.max(0,startAt-24)&&p.index<=startAt&&Number.isFinite(p.v));
       const chart=document.getElementById('dashboardPressureChart');
       if(pressurePoints.length>1){
         const vals=pressurePoints.map(p=>p.v),lo=Math.min(...vals)-0.5,hi=Math.max(...vals)+0.5;
