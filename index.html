@@ -1001,6 +1001,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       loadUSGSWaterCurrent(lat,lon).catch(e=>setWaterCurrentUnavailable('USGS flow data unavailable: '+e.message));
     }
   }
+  let noaaCurrentStationsPromise=null;
   function setWaterCurrentUnavailable(message){
     ['waterCurrentState','waterCurrentSpeed','waterCurrentDirection','waterCurrentNext'].forEach(id=>setCondition(id,'Unavailable'));
     setCondition('waterCurrentStation',message);
@@ -1010,9 +1011,8 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   const milesBetween=(a,b)=>{const rad=x=>x*Math.PI/180,dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon),h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 3958.8*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));};
   async function loadNOAAWaterCurrent(lat,lon){
     setCondition('waterCurrentIntro','Finding the nearest NOAA tidal-current prediction station…');
-    const response=await fetch('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=currentpredictions&units=english');
-    if(!response.ok)throw Error('Station list returned HTTP '+response.status);
-    const data=await response.json(),stations=data.stations||[];
+    if(!noaaCurrentStationsPromise) noaaCurrentStationsPromise=fetch('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=currentpredictions&units=english').then(response=>{if(!response.ok)throw Error('Station list returned HTTP '+response.status);return response.json();}).then(data=>data.stations||[]).catch(error=>{noaaCurrentStationsPromise=null;throw error;});
+    const stations=await noaaCurrentStationsPromise;
     const candidates=stations.filter(x=>x.id&&x.type!=='W'&&Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lng)))
       .map(x=>({...x,distance:milesBetween({lat,lon},{lat:Number(x.lat),lon:Number(x.lng)})}))
       .filter(x=>x.distance<=50).sort((a,b)=>a.distance-b.distance);
@@ -1035,8 +1035,9 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       const sp=Number(current.Speed),dir=Number(current.Direction);
       if(Number.isFinite(sp))speed=sp.toFixed(2)+' kt';
       if(Number.isFinite(dir))direction=waterCurrentCompass(dir);
-      phase='Predicted current';
+      phase='Next predicted current';
       next=current.when.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+      nextLabel='Prediction time';
     }else{
       const eventRows=future.filter(x=>x.type||x.Velocity_Major!==undefined);
       const upcoming=eventRows.filter(x=>x.when.getTime()>=now-30*60000);
@@ -1053,9 +1054,9 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       }
     }
     setCondition('waterCurrentState',phase);
-    setCondition('waterCurrentStateLabel','Tidal-current phase');
+    setCondition('waterCurrentStateLabel','Prediction status');
     setCondition('waterCurrentSpeed',speed);
-    setCondition('waterCurrentSpeedLabel','Predicted speed');
+    setCondition('waterCurrentSpeedLabel','Speed at prediction');
     setCondition('waterCurrentDirection',direction);
     setCondition('waterCurrentNext',next);
     setCondition('waterCurrentNextLabel',nextLabel);
