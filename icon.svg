@@ -1,1 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="#10243a"/><path d="M70 280c75-95 155-95 230-20 45 45 93 47 142 5-18 71-91 119-164 99-44-12-75-45-103-78-33-39-64-43-105-6z" fill="#f2c14e"/><path d="M125 365h260" stroke="#fff" stroke-width="18" stroke-linecap="round"/><circle cx="355" cy="228" r="15" fill="#fff"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+ <linearGradient id="bg" x2="0" y2="1"><stop stop-color="#163958"/><stop offset=".58" stop-color="#10243a"/><stop offset="1" stop-color="#071522"/></linearGradient>
+ <linearGradient id="gold" x2="0" y2="1"><stop stop-color="#fff0a3"/><stop offset=".38" stop-color="#f2c14e"/><stop offset="1" stop-color="#a66b12"/></linearGradient>
+ <linearGradient id="fish" x2=".15" y2="1"><stop stop-color="#f7fbff"/><stop offset=".45" stop-color="#a9c5d2"/><stop offset=".75" stop-color="#536f7b"/><stop offset="1" stop-color="#172d3d"/></linearGradient>
+ <clipPath id="round"><rect x="12" y="12" width="488" height="488" rx="92"/></clipPath>
+</defs>
+<g clip-path="url(#round)">
+ <rect width="512" height="512" fill="url(#bg)"/>
+ <circle cx="390" cy="220" r="92" fill="#f2a43b" opacity=".16"/>
+ <path d="M0 300 Q120 270 220 302 T512 292 V512 H0Z" fill="#071b2b"/>
+ <path d="M0 337 Q120 318 230 342 T512 330 M0 370 Q140 350 260 378 T512 365" fill="none" stroke="#246080" stroke-width="8" opacity=".8"/>
+ <path d="M285 294 L512 294 M322 294 L322 363 M365 294 L365 363 M408 294 L408 363 M451 294 L451 363 M494 294 L494 363 M295 294 L512 294" stroke="#17212a" stroke-width="10"/>
+ <path d="M286 287 L512 287" stroke="url(#gold)" stroke-width="7"/>
+ <path d="M68 90 L68 170 L38 190 L67 220 L95 214 L117 184 L145 190 L167 166 L167 93 Z" fill="none" stroke="url(#gold)" stroke-width="8" stroke-linejoin="round"/>
+ <path d="M111 118 L119 140 L143 140 L124 154 L131 177 L111 163 L91 177 L98 154 L79 140 L103 140Z" fill="url(#gold)"/>
+ <path d="M65 344 Q100 305 139 309 Q184 244 278 208 Q335 187 393 205 Q416 213 441 201 Q430 232 400 246 Q370 263 332 260 Q286 303 221 324 Q157 346 110 377 Q91 389 65 344Z" fill="url(#fish)" stroke="#e7f3f8" stroke-width="5"/>
+ <path d="M143 310 Q126 269 153 242 Q178 269 184 284 M208 272 Q218 235 250 220 Q255 250 246 263 M285 211 Q316 178 352 178 Q343 207 326 218" fill="#b8d0d9" stroke="#f2c14e" stroke-width="5"/>
+ <path d="M66 344 Q36 322 29 291 Q65 301 92 328 Q83 348 66 344Z" fill="#b5cbd5" stroke="#f2c14e" stroke-width="5"/>
+ <path d="M392 205 Q423 180 451 177 Q439 206 416 225" fill="#f5fbff" stroke="#f2c14e" stroke-width="5"/>
+ <path d="M325 260 Q354 280 389 273 Q368 297 334 291" fill="#172d3d" stroke="#d7e6eb" stroke-width="4"/>
+ <circle cx="385" cy="220" r="12" fill="#071522" stroke="url(#gold)" stroke-width="6"/><circle cx="388" cy="217" r="4" fill="#fff"/>
+ <g fill="#071522" opacity=".9"><circle cx="204" cy="284" r="5"/><circle cx="226" cy="274" r="5"/><circle cx="247" cy="263" r="5"/><circle cx="270" cy="253" r="5"/><circle cx="293" cy="243" r="5"/><circle cx="315" cy="235" r="5"/><circle cx="338" cy="228" r="5"/></g>
+ <path d="M20 397 Q53 365 84 399 Q110 428 139 400 M20 426 Q52 394 84 427 Q111 454 142 426" fill="none" stroke="#45a9d0" stroke-width="9" stroke-linecap="round"/>
+ <path d="M468 82 Q441 42 390 55 Q353 64 337 103" fill="none" stroke="#eaf4f7" stroke-width="5" stroke-linecap="round"/>
+ <path d="M337 103 Q323 123 342 133 Q356 139 366 125" fill="none" stroke="url(#gold)" stroke-width="6" stroke-linecap="round"/>
+</g>
+<rect x="12" y="12" width="488" height="488" rx="92" fill="none" stroke="url(#gold)" stroke-width="14"/>
+</svg>
