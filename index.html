@@ -931,7 +931,8 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   let fishingMap=null,mapMarker=null,mapTiles=null,currentOverlayLayer=null,currentOverlayEnabled=true,currentOverlayData=null;
   const mapStatus=document.getElementById('mapStatus');
   function initFishingMap(){
-    if(fishingMap||!window.L)return;
+    if(fishingMap)return;
+    if(!window.L){mapStatus.textContent='Map library did not load. Check your internet connection and reload the page.';return;}
     fishingMap=L.map('fishingMap',{zoomControl:true}).setView([29.9,-95.2],8);
     fishingMap._satelliteLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
     fishingMap._streetLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'});
@@ -946,6 +947,10 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     if(conditionCoords)updateFishingMap(conditionCoords.lat,conditionCoords.lon,conditionCoords.label);
     setTimeout(()=>fishingMap.invalidateSize(),150);
   }
+  // Initialize the map on first page load as well as when its tab is opened.
+  // The load callback gives the browser time to finish laying out the visible map container.
+  if(document.readyState==='complete')setTimeout(()=>{initFishingMap();if(fishingMap)setTimeout(()=>fishingMap.invalidateSize(),180);},0);
+  else window.addEventListener('load',()=>{initFishingMap();if(fishingMap)setTimeout(()=>fishingMap.invalidateSize(),180);},{once:true});
   function updateFishingMap(lat,lon,label){
     if(!fishingMap)return;const point=[lat,lon];
     if(!mapMarker){
