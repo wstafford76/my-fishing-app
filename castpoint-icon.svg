@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254">
+<image href="./icon.png" width="1254" height="1254" preserveAspectRatio="xMidYMid meet"/>
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10243a"/><stop offset="1" stop-color="#061321"/></linearGradient></defs>
+<rect x="104" y="590" width="1046" height="310" rx="34" fill="url(#g)" stroke="#f2c14e" stroke-width="9"/>
+<text x="627" y="785" text-anchor="middle" font-family="Georgia,serif" font-size="142" font-weight="bold" letter-spacing="3" fill="#fff1c5" stroke="#4c350d" stroke-width="3" paint-order="stroke">CASTPOINT</text>
+</svg>
