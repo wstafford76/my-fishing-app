@@ -986,7 +986,8 @@ on>
   function classifyFishingLocationText(value){
     const text=String(value||'').toLowerCase();
     const has=words=>words.some(word=>new RegExp('(^|[^a-z])'+word+'([^a-z]|$)','i').test(text));
-    // Classify explicit water features, not city names.
+    // Known coastal city names are explicit exceptions; otherwise classify water features, not city names.
+    if(has(['freeport texas','freeport tx']))return 'surf';
     if(has(['beach','ocean','gulf','surf','inlet','jetty','pier','estuary','tidal','saltwater','salt water','bay','harbor','harbour','ship channel','coast','coastal','seaside','sound','lagoon','marina']))return 'surf';
     if(has(['lake','pond','reservoir','creek','river','stream','bayou','freshwater','fresh water','fishing pond','canal']))return 'freshwater';
     return null;
@@ -1302,7 +1303,7 @@ on>
         if(data.results&&data.results.length){matches=data.results;break;}
       }
       if(matches.length){
-        const stateMatch=q.match(/,\\s*([a-z ]+)\\s*$/i);const requestedState=stateMatch&&stateMatch[1].length>2?stateMatch[1].trim().toLowerCase():null;const p=(requestedState&&matches.find(x=>String(x.admin1||'').toLowerCase()===requestedState))||matches[0];
+        const stateNames=['texas','florida','louisiana','alabama','mississippi','georgia','south carolina','north carolina','virginia','california','oregon','washington','new york','new jersey','maine','massachusetts'];const requestedState=stateNames.find(name=>q.toLowerCase().includes(name))||null;const p=(requestedState&&matches.find(x=>String(x.admin1||'').toLowerCase()===requestedState))||matches[0];
         await loadConditions(p.latitude,p.longitude,[p.name,p.admin1,p.country].filter(Boolean).join(', '),q);
         return;
       }
