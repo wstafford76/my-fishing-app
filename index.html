@@ -253,7 +253,8 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
   <button class="main-tab" data-panel="inventoryPanel">Tackle Inventory</button>
   <button class="main-tab" data-panel="conditionsPanel">Fishing Conditions</button>
   <button class="main-tab" data-panel="logPanel">Fishing Log</button>
-  <button class="main-tab" data-panel="helpPanel">Help & Bait</button>
+  <button class="main-tab" data-panel="helpPanel">Help</button>
+  <button class="main-tab" data-panel="baitPanel">Bait & Reports</button>
 </nav>
 <section id="guidesPanel" class="panel">
 <input
@@ -483,8 +484,11 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <details><summary><strong>Best Fishing Windows</strong></summary><p class="small-note">The app compares forecast wind, gusts, rain chance, temperature, pressure trend, and—when available—surf waves. Scores rank forecast periods against one another. They are not catch probabilities, and tide timing is not included in the current scoring model.</p></details>
     <details><summary><strong>Fishing Log and condition timeline</strong></summary><p class="small-note">Catch entries can save the latest loaded conditions automatically. The Trip Conditions Timeline lets you manually record additional readings during a trip, even when you have not caught a fish. Comparing readings with catches over time may reveal patterns, but small samples can be misleading.</p></details>
   </div>
+</section>
+<section id="baitPanel" class="panel" hidden>
+  <h2 style="color:var(--navy);margin:0">Bait & Local Fishing Reports</h2>
+  <p class="small-note">Location-specific bait ideas and recent fishing report searches for your selected fishing area.</p>
   <div class="log-form">
-    <h3 style="color:var(--navy);margin:0 0 4px">Bait & Local Fishing Reports</h3>
     <p class="small-note">Recommendations are separated by your selected fishing location and fishing style. Use current report links to check what anglers are recently reporting; general bait ideas below are suggestions, not verified local catches.</p>
     <div class="conditions-location" role="group" aria-label="Bait recommendation fishing type">
       <button class="action" id="baitFreshwaterMode" type="button" aria-pressed="true">Freshwater</button>
