@@ -1353,7 +1353,7 @@ on>
     if(tide.error)throw Error('NOAA station '+station.id+': '+(tide.error.message||'prediction error'));
     const asUtc=t=>new Date(t.replace(' ','T')+'Z');
     const allEvents=(tide.predictions||[]).map(x=>({...x,when:asUtc(x.t)})).filter(x=>Number.isFinite(x.when.getTime())).sort((a,b)=>a.when-b.when);
-    const events=allEvents.filter(x=>x.when.toLocaleDateString('en-CA')===chosen);
+    const events=allEvents.filter(x=>localDate(x.when)===chosen);
     const localTime=d=>d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone});
     const eventLabel=x=>(x.type==='H'?'High':'Low')+' · '+localTime(x.when)+' · '+x.v+' ft';
     const card=x=>'<article class="stat"><strong>'+localTime(x.when)+'</strong><span>'+(x.type==='H'?'High tide':'Low tide')+' · '+x.v+' ft</span></article>';
@@ -1362,14 +1362,19 @@ on>
     const morningEvents=events.filter(x=>{const h=Number(new Intl.DateTimeFormat('en-US',{hour:'numeric',hourCycle:'h23',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone}).format(x.when));return h>=5&&h<=10;});
     morning.innerHTML=morningEvents.length?morningEvents.map(card).join(''):'<p class="small-note">No tide turn is predicted between 5 and 10 AM.</p>';
     const start=new Date(chosen+'T05:00:00'),end=new Date(chosen+'T10:00:00');
-    const before=events.filter(x=>x.when<=start).slice(-1)[0],after=events.find(x=>x.when>start);
-    let summary='Tide trend from 5–10 AM cannot be determined from the returned tide turns.';
-    if(before&&after){
-      const rising=after.type==='H';
-      const nextTurn=after.when;
-      summary=(rising?'Incoming tide (rising)':'Outgoing tide (falling)')+' at 5 AM; '+(rising?'high':'low')+' tide around '+localTime(nextTurn)+'.';
-      if(nextTurn>end)summary+=' It remains '+(rising?'incoming':'outgoing')+' through 10 AM.';
+    const before=allEvents.filter(x=>x.when<=start).slice(-1)[0];
+    const turns=allEvents.filter(x=>x.when>start&&x.when<end);
+    const boundaries=[before,...turns,allEvents.find(x=>x.when>=end)].filter(Boolean);
+    const segments=[];
+    for(let n=0;n<boundaries.length-1;n++){
+      const from=n===0?start:boundaries[n].when;
+      const to=n===boundaries.length-2?end:boundaries[n+1].when;
+      const next=boundaries[n+1];
+      if(to<=from)continue;
+      const phase=next.type==='H'?'rising toward high tide':'falling toward low tide';
+      segments.push(localTime(from)+'–'+localTime(to)+': '+phase);
     }
+    const summary=segments.length?segments.join(' · '):'Tide movement from 5–10 AM cannot be determined because NOAA did not return the surrounding high and low tide turns.';
     setCondition('tideMorningSummary',summary);
     return {events:allEvents,station:station.name};
   }
@@ -1452,10 +1457,20 @@ on>
           const hourTime=new Date(weather.time[i]);
           const previous=tideEvents.filter(t=>t.when<=hourTime).slice(-1)[0],next=tideEvents.find(t=>t.when>hourTime);
           if(previous&&next){
-            const minutesAfter=(hourTime-previous.when)/60000,minutesBefore=(next.when-hourTime)/60000;
+            const intervalMinutes=(next.when-previous.when)/60000;
+            const progress=intervalMinutes>0?(hourTime-previous.when)/(next.when-previous.when):0.5;
             const phase=next.type==='H'?'rising':'falling';
-            if(minutesAfter<=30||minutesBefore<=30){score+=1;reasons.push('Near '+(next.type==='H'?'high':'low')+' tide; current may be slowing');}
-            else {const tideBonus=(minutesAfter<90||minutesBefore<90)?4:8;score+=tideBonus;reasons.push((phase==='rising'?'Rising':'Falling')+' tide · moving water');}
+            const tideIntensity=Math.sin(Math.PI*Math.max(0,Math.min(1,progress)));
+            if(tideIntensity<0.35){
+              score+=0;
+              reasons.push(progress<0.5?'Near '+(previous.type==='H'?'high':'low')+' tide; current may be weak':'Approaching '+(next.type==='H'?'high':'low')+' tide; current may be slowing');
+            } else if(tideIntensity<0.75){
+              score+=3;
+              reasons.push((phase==='rising'?'Rising':'Falling')+' tide · moderate water movement (estimated)');
+            } else {
+              score+=6;
+              reasons.push((phase==='rising'?'Rising':'Falling')+' tide · stronger water movement (estimated)');
+            }
           }
         }
         rows.push({hour,score:Math.max(0,Math.min(100,Math.round(score))),reasons,risks});
