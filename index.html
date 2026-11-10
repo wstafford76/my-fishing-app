@@ -311,6 +311,25 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <button class="action" id="conditionGPS" type="button">Use my GPS</button>
   </div>
   <div id="conditionStatus" class="small-note" role="status">Choose a fishing location or use your phone's GPS to load conditions.</div>
+  <div class="conditions-location" style="margin-top:12px">
+    <label for="conditionDate" style="font-weight:600;color:var(--navy)">Plan a trip date (forecast up to 16 days):</label>
+    <input id="conditionDate" type="date" aria-label="Trip date">
+    <button class="action secondary" id="conditionForecast" type="button">Check trip forecast</button>
+  </div>
+  <div id="conditionForecastStatus" class="small-note" role="status">Choose a location, then select a date to plan your trip.</div>
+  <div id="conditionForecastResults" hidden>
+    <h3 id="forecastDateTitle" style="color:var(--navy);margin:16px 0 8px">Trip forecast</h3>
+    <div class="conditions-grid">
+      <article class="stat"><strong id="fcTemp">—</strong><span>High / low</span></article>
+      <article class="stat"><strong id="fcRain">—</strong><span>Max rain chance</span></article>
+      <article class="stat"><strong id="fcWind">—</strong><span>Max wind</span></article>
+      <article class="stat"><strong id="fcWindDir">—</strong><span>Dominant wind (from)</span></article>
+      <article class="stat"><strong id="fcGust">—</strong><span>Max gusts</span></article>
+      <article class="stat"><strong id="fcWave">—</strong><span>Max wave height</span></article>
+      <article class="stat"><strong id="fcWavePeriod">—</strong><span>Max wave period</span></article>
+      <article class="stat"><strong id="fcWaveDir">—</strong><span>Dominant wave direction</span></article>
+    </div>
+  </div>
   <div id="conditionResults" hidden>
     <h3 id="conditionLocationName" style="color:var(--navy)"></h3>
     <div class="conditions-grid">
@@ -636,7 +655,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       setCondition('seaDirection',fmt(c.wave_direction,'°'));setCondition('seaTemp',fmt(c.sea_surface_temperature,'°F'));
     } else {['seaWave','seaPeriod','seaDirection','seaTemp'].forEach(id=>setCondition(id,'Unavailable'));}
     conditionStatus.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.';
-    loadNearbyTides(lat,lon).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
+    loadNearbyTides(lat,lon,document.getElementById('conditionDate').value).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
   }
   async function findConditionPlace() {
     const q=document.getElementById('conditionPlace').value.trim();
@@ -671,32 +690,71 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     conditionStatus.textContent='Requesting GPS permission…';
     navigator.geolocation.getCurrentPosition(pos=>loadConditions(pos.coords.latitude,pos.coords.longitude,'Current GPS location').catch(e=>conditionStatus.textContent=e.message),err=>{conditionStatus.textContent=err.code===1?'Location permission was denied. You can enter a fishing location instead.':'Could not get your location. Try manual location search.';},{enableHighAccuracy:true,timeout:15000,maximumAge:300000});
   });
-  async function loadNearbyTides(lat,lon) {
+  async function loadNearbyTides(lat,lon,dateValue) {
     setCondition('tideStation','Searching NOAA tide stations…');
     const meta=await fetch('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=tidepredictions&units=english&format=json').then(r=>{if(!r.ok)throw Error('Station list unavailable');return r.json()});
     const stations=meta.stations||[];
     if(!stations.length)throw Error('No NOAA tide stations returned');
     const distance=(a,b)=>{const rad=x=>x*Math.PI/180;const dLat=rad(b.lat-a.lat),dLon=rad(b.lng-a.lng);const h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 3958.8*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));};
-    const station=stations.filter(x=>Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lng))).sort((a,b)=>distance({lat, lng:lon},{lat:Number(a.lat),lng:Number(a.lng)})-distance({lat,lng:lon},{lat:Number(b.lat),lng:Number(b.lng)}))[0];
+    const station=stations.filter(x=>Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lng))).sort((a,b)=>distance({lat,lng:lon},{lat:Number(a.lat),lng:Number(a.lng)})-distance({lat,lng:lon},{lat:Number(b.lat),lng:Number(b.lng)}))[0];
     if(!station)throw Error('No nearby station found');
     setCondition('tideStation','Nearest station: '+station.name+' ('+distance({lat,lng:lon},{lat:Number(station.lat),lng:Number(station.lng)}).toFixed(1)+' mi away)');
-    const now=new Date(),start=new Date(now.getTime()-6*3600000);
-    // NOAA explicitly supports begin_date + range (hours); avoid end_date parsing failures.
-    const begin=start.toISOString().slice(0,10).replace(/-/g,'');
-    const params=new URLSearchParams({product:'predictions',application:'MyFishingReference',begin_date:begin,range:'48',datum:'MLLW',station:String(station.id),time_zone:'gmt',units:'english',interval:'hilo',format:'json'});
-    const url='https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?'+params.toString();
-    const tideResponse=await fetch(url);
+    const chosen=dateValue||new Date().toLocaleDateString('en-CA');
+    const dayStart=new Date(chosen+'T00:00:00');
+    const begin=new Date(dayStart.getTime()-24*3600000).toISOString().slice(0,10).replace(/-/g,'');
+    const params=new URLSearchParams({product:'predictions',application:'MyFishingReference',begin_date:begin,range:'72',datum:'MLLW',station:String(station.id),time_zone:'gmt',units:'english',interval:'hilo',format:'json'});
+    const tideResponse=await fetch('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?'+params.toString());
     if(!tideResponse.ok)throw Error('NOAA tide service returned HTTP '+tideResponse.status);
     const tide=await tideResponse.json();
     if(tide.error)throw Error('NOAA station '+station.id+': '+(tide.error.message||'prediction error'));
     const events=tide.predictions||[];
     const asUtc=t=>new Date(t.replace(' ','T')+'Z');
-    const high=events.find(x=>x.type==='H'&&asUtc(x.t)>now),low=events.find(x=>x.type==='L'&&asUtc(x.t)>now);
+    const sameLocalDay=x=>asUtc(x.t).toLocaleDateString('en-CA')===chosen;
+    const high=events.find(x=>x.type==='H'&&sameLocalDay(x)),low=events.find(x=>x.type==='L'&&sameLocalDay(x));
     const display=x=>x?asUtc(x.t).toLocaleString([], {weekday:'short',hour:'numeric',minute:'2-digit',timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone})+' · '+x.v+' ft':'Not available';
     setCondition('tideNextHigh',display(high));setCondition('tideNextLow',display(low));
   }
 
-  // In-app PDF viewer: renders one page at a time to keep mobile memory use low.
+  const conditionDate=document.getElementById('conditionDate');
+  const localDate=d=>{const x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,10);};
+  const today=localDate(new Date()),lastForecastDay=localDate(new Date(Date.now()+15*86400000));
+  conditionDate.min=today;conditionDate.max=lastForecastDay;conditionDate.value=today;
+  async function loadTripForecast(){
+    const selected=conditionDate.value;
+    if(!conditionCoords){document.getElementById('conditionForecastStatus').textContent='Find a location or use GPS before checking a trip forecast.';return;}
+    if(!selected){document.getElementById('conditionForecastStatus').textContent='Choose a trip date.';return;}
+    if(selected<today||selected>lastForecastDay){document.getElementById('conditionForecastStatus').textContent='Forecasts are available up to 16 days ahead. Choose a date within that window.';return;}
+    const {lat,lon}=conditionCoords;
+    const status=document.getElementById('conditionForecastStatus');
+    status.textContent='Loading forecast for '+new Date(selected+'T12:00:00').toLocaleDateString([], {weekday:'long',month:'short',day:'numeric'})+'…';
+    const wUrl='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant,wind_gusts_10m_max&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&forecast_days=16&timezone=auto';
+    const mUrl='https://marine-api.open-meteo.com/v1/marine?latitude='+lat+'&longitude='+lon+'&daily=wave_height_max,wave_direction_dominant,wave_period_max&length_unit=imperial&forecast_days=16&timezone=auto&cell_selection=sea';
+    const results=await Promise.allSettled([fetch(wUrl).then(r=>{if(!r.ok)throw Error('Weather forecast unavailable');return r.json()}),fetch(mUrl).then(r=>{if(!r.ok)throw Error('Marine forecast unavailable');return r.json()})]);
+    const wi=results[0].status==='fulfilled'?(results[0].value.daily.time||[]).indexOf(selected):-1;
+    const mi=results[1].status==='fulfilled'?(results[1].value.daily.time||[]).indexOf(selected):-1;
+    if(wi<0&&mi<0){status.textContent='No forecast data is available for that date and location yet.';return;}
+    document.getElementById('conditionForecastResults').hidden=false;
+    document.getElementById('forecastDateTitle').textContent='Trip forecast · '+new Date(selected+'T12:00:00').toLocaleDateString([], {weekday:'long',month:'long',day:'numeric'});
+    if(wi>=0){
+      const d=results[0].value.daily;
+      setCondition('fcTemp',fmt(d.temperature_2m_max[wi],'°F')+' / '+fmt(d.temperature_2m_min[wi],'°F'));
+      setCondition('fcRain',fmt(d.precipitation_probability_max[wi],'%'));
+      setCondition('fcWind',fmt(d.wind_speed_10m_max[wi],' mph'));
+      setCondition('fcWindDir',compass(d.wind_direction_10m_dominant[wi]));
+      setCondition('fcGust',fmt(d.wind_gusts_10m_max[wi],' mph'));
+    } else ['fcTemp','fcRain','fcWind','fcWindDir','fcGust'].forEach(id=>setCondition(id,'Unavailable'));
+    if(mi>=0){
+      const d=results[1].value.daily;
+      setCondition('fcWave',fmt(d.wave_height_max[mi],' ft',1));
+      setCondition('fcWavePeriod',fmt(d.wave_period_max[mi],' sec',1));
+      setCondition('fcWaveDir',compass(d.wave_direction_dominant[mi]));
+    } else ['fcWave','fcWavePeriod','fcWaveDir'].forEach(id=>setCondition(id,'Unavailable'));
+    status.textContent='Forecast updated. Forecasts are estimates and can change as the trip date approaches.';
+    loadNearbyTides(lat,lon,selected).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
+  }
+  document.getElementById('conditionForecast').addEventListener('click',loadTripForecast);
+  conditionDate.addEventListener('change',()=>{document.getElementById('conditionForecastStatus').textContent='Date selected. Tap Check trip forecast to update weather, marine conditions, and tides.';});
+    // In-app PDF viewer: renders one page at a time to keep mobile memory use low.
   const pdfViewer = document.getElementById('pdfViewer');
   const pdfCanvas = document.getElementById('pdfCanvas');
   const pdfCtx = pdfCanvas.getContext('2d');
