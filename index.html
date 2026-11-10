@@ -822,14 +822,14 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     ];
     ideas.forEach(([title,body])=>{const el=document.createElement('article');el.className='stat';const strong=document.createElement('strong');strong.textContent=title;const span=document.createElement('span');span.textContent=body;el.append(strong,span);cards.append(el);});
     note.textContent='Searches are specific to '+place+'. Open a result to confirm its publication date, species, bait, and exact area.';
-    const terms=surf?'saltwater fishing report bait trout redfish drum':'freshwater fishing report bait bass crappie catfish';
-    const queries=[
-      ['Recent fishing reports',place+' '+terms+' latest fishing report'],
-      ['Angler reports & forums',place+' fishing report anglers bait'],
-      ['Bait shop reports',place+' bait shop fishing report']
-    ];
-    queries.forEach(([title,q])=>{const a=document.createElement('a');a.href='https://www.google.com/search?q='+encodeURIComponent(q)+'&tbs=qdr:m';a.target='_blank';a.rel='noopener noreferrer';a.className='action secondary';a.textContent=title;links.append(a);});
-    updated.textContent='Report searches prepared '+new Date().toLocaleString()+'. Results are refreshed by the search provider when opened; the app does not scrape or verify individual reports.';
+    const a=document.createElement('a');
+    a.href='https://texasfishingforum.com/forums/ubbthreads.php/forums/9/1/inshore-fishing';
+    a.target='_blank';
+    a.rel='noopener noreferrer';
+    a.className='action secondary';
+    a.textContent='Texas Fishing Forum · Inshore Fishing';
+    links.append(a);
+    updated.textContent='Direct link to the Texas Fishing Forum inshore fishing section.';
   }
   // Fishing Conditions: GPS/manual place, Open-Meteo weather + marine, NOAA tide predictions.
   const conditionStatus = document.getElementById('conditionStatus');
