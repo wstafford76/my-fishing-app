@@ -9,6 +9,8 @@
 <link rel="icon" href="icon.png" type="image/png">
 <link rel="apple-touch-icon" href="icon.png">
 <title>My Fishing Reference</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 :root {
@@ -213,6 +215,11 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
 @media(max-width:560px){.inventory-tools{grid-template-columns:1fr}.inventory-item{grid-template-columns:1fr}.item-buttons{justify-content:flex-end}.form-grid{grid-template-columns:1fr}}
 
 
+/* Interactive fishing map */
+.fishing-map-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+#fishingMap{height:360px;width:100%;border:1px solid var(--line);border-radius:12px;z-index:1;background:#dbe4e9}
+.map-help{font-size:.84rem;color:var(--muted);margin:6px 0}
+@media(max-width:560px){#fishingMap{height:330px}}
 /* Fishing log */
 .log-form{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0 18px}
 .photo-preview,.catch-photos{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
@@ -326,7 +333,18 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   </div>
   <p id="fishingModeNote" class="small-note">Freshwater mode: weather, pressure, daylight, and nearby water monitoring.</p>
   <div class="conditions-location">
-    <input id="conditionPlace" type="search" placeholder="Enter a place (e.g. San Luis Pass, TX)" aria-label="Fishing location">
+  <div class="log-form" style="margin:14px 0">
+    <h3 style="color:var(--navy);margin:0 0 4px">Fishing Map</h3>
+    <p class="map-help">Tap any pond, shoreline, beach, or other spot on the map to load conditions for that exact point.</p>
+    <div class="fishing-map-tools">
+      <button class="action" id="mapSatellite" type="button" aria-pressed="true">Satellite</button>
+      <button class="action secondary" id="mapStreet" type="button" aria-pressed="false">Street map</button>
+      <button class="action secondary" id="mapGPS" type="button">Center on my GPS</button>
+    </div>
+    <div id="fishingMap" role="application" aria-label="Interactive fishing location map"></div>
+    <p id="mapStatus" class="map-help" role="status">Loading map…</p>
+  </div>
+      <input id="conditionPlace" type="search" placeholder="Enter a place (e.g. San Luis Pass, TX)" aria-label="Fishing location">
     <button class="action secondary" id="conditionSearch" type="button">Find location</button>
     <button class="action" id="conditionGPS" type="button">Use my GPS</button>
   </div>
@@ -576,6 +594,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   mainTabs.forEach(tab => tab.addEventListener('click', () => {
     mainTabs.forEach(t => t.classList.toggle('active', t === tab));
     document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== tab.dataset.panel);
+    if(tab.dataset.panel==='conditionsPanel'){initFishingMap();if(fishingMap)setTimeout(()=>fishingMap.invalidateSize(),180);}
   }));
 
   // Inventory data is seeded once; subsequent edits live in localStorage.
@@ -730,8 +749,55 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   const setCondition = (id,value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
   const fmt = (v,unit,digits=0) => Number.isFinite(v) ? Number(v).toFixed(digits)+unit : '—';
   const compass = v => Number.isFinite(v) ? ['N','NE','E','SE','S','SW','W','NW'][Math.round((((v%360)+360)%360)/45)%8]+' ('+Math.round(v)+'°)' : '—';
+  // Interactive map: satellite by default; taps select coordinates and load conditions.
+  let fishingMap=null,mapMarker=null,mapTiles=null;
+  const mapStatus=document.getElementById('mapStatus');
+  function initFishingMap(){
+    if(fishingMap||!window.L)return;
+    fishingMap=L.map('fishingMap',{zoomControl:true}).setView([29.9,-95.2],8);
+    fishingMap._satelliteLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
+    fishingMap._streetLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'});
+    mapTiles=fishingMap._satelliteLayer;mapTiles.addTo(fishingMap);
+    fishingMap.on('click',async e=>{
+      const lat=e.latlng.lat,lon=e.latlng.lng,label='Map pin · '+lat.toFixed(5)+', '+lon.toFixed(5);
+      document.getElementById('conditionPlace').value=label;mapStatus.textContent='Selected map point. Loading conditions…';
+      try{await loadConditions(lat,lon,label);mapStatus.textContent='Conditions loaded for your selected map point.';}catch(err){mapStatus.textContent='Selected point, but conditions could not load: '+err.message;}
+    });
+    mapStatus.textContent='Tap the map to select a fishing spot.';
+    if(conditionCoords)updateFishingMap(conditionCoords.lat,conditionCoords.lon,conditionCoords.label);
+    setTimeout(()=>fishingMap.invalidateSize(),150);
+  }
+  function updateFishingMap(lat,lon,label){
+    if(!fishingMap)return;const point=[lat,lon];
+    if(!mapMarker)mapMarker=L.marker(point).addTo(fishingMap);else mapMarker.setLatLng(point);
+    mapMarker.bindPopup(String(label||'Selected fishing spot')).openPopup();
+    fishingMap.setView(point,Math.max(fishingMap.getZoom(),13));
+    mapStatus.textContent='Selected: '+(label||'Fishing spot')+' · '+lat.toFixed(5)+', '+lon.toFixed(5);
+  }
+  function setMapLayer(layer){
+    initFishingMap();if(!fishingMap)return;
+    if(mapTiles)fishingMap.removeLayer(mapTiles);
+    mapTiles=layer==='street'?fishingMap._streetLayer:fishingMap._satelliteLayer;mapTiles.addTo(fishingMap);
+    document.getElementById('mapSatellite').className='action'+(layer==='satellite'?'':' secondary');
+    document.getElementById('mapStreet').className='action'+(layer==='street'?'':' secondary');
+    document.getElementById('mapSatellite').setAttribute('aria-pressed',String(layer==='satellite'));
+    document.getElementById('mapStreet').setAttribute('aria-pressed',String(layer==='street'));
+  }
+  document.getElementById('mapSatellite').addEventListener('click',()=>setMapLayer('satellite'));
+  document.getElementById('mapStreet').addEventListener('click',()=>setMapLayer('street'));
+  document.getElementById('mapGPS').addEventListener('click',()=>{
+    if(!navigator.geolocation){mapStatus.textContent='GPS is not available in this browser.';return;}
+    mapStatus.textContent='Getting your GPS location…';
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const lat=pos.coords.latitude,lon=pos.coords.longitude,label='Current GPS location';
+      initFishingMap();if(fishingMap)fishingMap.setView([lat,lon],15);
+      document.getElementById('conditionPlace').value=label;
+      try{await loadConditions(lat,lon,label);mapStatus.textContent='GPS location selected and conditions loaded.';}catch(e){mapStatus.textContent=e.message;}
+    },err=>{mapStatus.textContent=err.code===1?'GPS permission was denied.':'Could not get GPS location.';},{enableHighAccuracy:true,timeout:15000,maximumAge:300000});
+  });
   async function loadConditions(lat,lon,label) {
     conditionCoords={lat,lon,label};
+    if(fishingMap)updateFishingMap(lat,lon,label);
     conditionStatus.textContent='Loading weather and marine conditions…';
     conditionResults.hidden=false;
     setCondition('conditionLocationName',label+' · '+lat.toFixed(3)+', '+lon.toFixed(3));
