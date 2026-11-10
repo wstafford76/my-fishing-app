@@ -465,7 +465,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
   function renderInventory() {
-    const q = searchEl.value.trim().toLowerCase().replace(/\\btackle\\s+box\\b/g, 'box');
+    const q = searchEl.value.trim().toLowerCase().replace(/\btackle\s+box\b/g, 'box');
     const cat = categoryEl.value;
     const filtered = inventory.map((item, index) => ({item,index})).filter(({item}) => {
       const text = Object.values(item).join(' ').toLowerCase();
