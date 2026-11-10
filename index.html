@@ -444,22 +444,28 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <article class="stat"><strong id="wxHumidity">—</strong><span>Humidity</span></article>
       <article class="stat"><strong id="wxRain">—</strong><span>Precipitation</span></article>
     </div>
-    <section id="waterCurrentSection" class="log-form" style="margin-top:18px">
-      <h3 style="color:var(--navy);margin:0 0 6px">Water Current</h3>
-      <p id="waterCurrentIntro" class="small-note">Current information from the nearest available monitoring source.</p>
+    <section id="tideCurrentReport" class="log-form" style="margin-top:18px">
+      <h3 style="color:var(--navy);margin:0 0 4px">Tide & Current Report</h3>
+      <p id="tideCurrentUpdated" class="small-note">Choose a saltwater location to load the latest report.</p>
       <div class="conditions-grid">
-        <article class="stat"><strong id="waterCurrentState">—</strong><span id="waterCurrentStateLabel">Current status</span></article>
-        <article class="stat"><strong id="waterCurrentSpeed">—</strong><span id="waterCurrentSpeedLabel">Current speed</span></article>
-        <article class="stat"><strong id="waterCurrentDirection">—</strong><span>Direction</span></article>
-        <article class="stat"><strong id="waterCurrentNext">—</strong><span id="waterCurrentNextLabel">Next current change</span></article>
+        <article class="stat"><strong id="plainTideStage">—</strong><span>Tide right now</span></article>
+        <article class="stat"><strong id="plainTideLevel">—</strong><span>Predicted tide height</span></article>
+        <article class="stat"><strong id="plainCurrentDirection">—</strong><span>Current flowing toward</span></article>
+        <article class="stat"><strong id="plainCurrentSpeed">—</strong><span>Current speed</span></article>
       </div>
-      <p id="waterCurrentStation" class="small-note">Load a fishing location to find nearby current data.</p>
-      <p id="waterCurrentCaveat" class="small-note">Predictions and nearby gauges may not represent the exact water at your fishing spot.</p>
-      <div class="log-form" style="margin-top:10px">
-        <strong>How to interpret this information</strong>
-        <p class="small-note"><strong>Station data:</strong> The number and marker refer to the named NOAA or USGS station, not a measurement at your feet.</p>
-        <p class="small-note"><strong>Spatial model guidance:</strong> NOAA's Northern Gulf of America Operational Forecast System (NGOFS2) models currents across the Galveston Bay region, including a San Luis Pass point. It can show area-wide nowcast and forecast guidance; it is still a model, not a direct measurement. It updates four times daily and provides short-range guidance. <a href="https://tidesandcurrents.noaa.gov/ofs/ngofs2/ngofs_galveston.html" target="_blank" rel="noopener noreferrer">Open NOAA Galveston Bay current model</a>.</p>
-        <p class="small-note"><strong>Unverified local water:</strong> Exact flow in a particular gut, cut, sandbar edge, pond corner, or shoreline seam is not confirmed unless a sensor or suitable model resolves that spot. The app will not draw invented currents there.</p>
+      <p id="plainTideNext" class="small-note">Next high or low tide will appear here.</p>
+      <div style="background:#eaf0f5;border-radius:10px;padding:13px;margin-top:10px">
+        <strong style="color:var(--navy)">What this means</strong>
+        <p id="plainFishingExplanation" style="margin:5px 0 0;color:#405366">The app will translate the tide and current into a short plain-language summary.</p>
+      </div>
+      <p id="plainCurrentSource" class="small-note">Current direction and speed will be identified as modeled or measured. They are not guaranteed to match a specific gut or shoreline seam.</p>
+      <details style="margin-top:8px">
+        <summary style="cursor:pointer;color:var(--navy);font-weight:650">Data sources and limitations</summary>
+        <p class="small-note">Tide stage and height use NOAA tide predictions from the nearest available tide station. Current speed and direction use Open-Meteo's ocean-current model, which combines currents, waves, and tides at roughly 8 km resolution. Coastal accuracy is limited; use this as general fishing guidance, not navigation data or a measurement at your exact fishing spot.</p>
+        <p class="small-note"><a href="https://tidesandcurrents.noaa.gov/" target="_blank" rel="noopener noreferrer">NOAA Tides & Currents</a> · <a href="https://open-meteo.com/en/docs/marine-weather-api" target="_blank" rel="noopener noreferrer">Marine model details</a></p>
+      </details>
+      <div id="waterCurrentLegacy" hidden>
+        <p id="waterCurrentIntro"></p><strong id="waterCurrentState"></strong><strong id="waterCurrentSpeed"></strong><strong id="waterCurrentDirection"></strong><strong id="waterCurrentNext"></strong><span id="waterCurrentStateLabel"></span><span id="waterCurrentSpeedLabel"></span><span id="waterCurrentNextLabel"></span><p id="waterCurrentStation"></p><p id="waterCurrentCaveat"></p>
       </div>
     </section>
     <div id="freshwaterConditions">
@@ -1064,12 +1070,94 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     conditionStatus.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.';
     renderBaitHelp();
     if(fishingMode==='surf'){
-      loadNOAAWaterCurrent(lat,lon).catch(e=>setWaterCurrentUnavailable('NOAA current data unavailable: '+e.message));
+      loadPlainEnglishTideCurrent(lat,lon,label).catch(e=>setPlainReportError(e.message));
       loadNearbyTides(lat,lon,document.getElementById('conditionDate').value).catch(e=>{setCondition('tideStation','NOAA tide data unavailable: '+e.message);});
     } else {
       loadUSGSWaterCurrent(lat,lon).catch(e=>setWaterCurrentUnavailable('USGS flow data unavailable: '+e.message));
     }
   }
+  function setPlainReportError(message){
+    ['plainTideStage','plainTideLevel','plainCurrentDirection','plainCurrentSpeed'].forEach(id=>setCondition(id,'Unavailable'));
+    setCondition('tideCurrentUpdated','Could not refresh report: '+message);
+    setCondition('plainFishingExplanation','The latest report could not be loaded. Try refreshing after a moment.');
+    setCondition('plainCurrentSource','No values are being guessed or carried forward from an earlier report.');
+  }
+  const plainCompass=deg=>['N','NE','E','SE','S','SW','W','NW'][Math.round((((Number(deg)%360)+360)%360)/45)%8];
+  async function loadPlainEnglishTideCurrent(lat,lon,label){
+    setCondition('tideCurrentUpdated','Loading NOAA tide predictions and modeled current for '+label+'…');
+    ['plainTideStage','plainTideLevel','plainCurrentDirection','plainCurrentSpeed'].forEach(id=>setCondition(id,'Loading…'));
+    const marineUrl='https://marine-api.open-meteo.com/v1/marine?latitude='+lat+'&longitude='+lon+'&current=ocean_current_velocity,ocean_current_direction&minutely_15=ocean_current_velocity,ocean_current_direction&hourly=ocean_current_velocity,ocean_current_direction&wind_speed_unit=mph&timezone=auto&forecast_days=2&past_days=1&cell_selection=sea';
+    const tideUrl='https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=tidepredictions&units=english&format=json';
+    const results=await Promise.allSettled([
+      fetch(marineUrl).then(r=>{if(!r.ok)throw Error('Marine current model returned HTTP '+r.status);return r.json();}),
+      fetch(tideUrl).then(r=>{if(!r.ok)throw Error('NOAA tide station list returned HTTP '+r.status);return r.json();})
+    ]);
+    let current=null,currentTime=null,currentSource='';
+    if(results[0].status==='fulfilled'){
+      const m=results[0].value,c=m.current||{};
+      let speed=Number(c.ocean_current_velocity),direction=Number(c.ocean_current_direction);
+      if(!Number.isFinite(speed)||!Number.isFinite(direction)){
+        const mm=m.minutely_15||{},hh=m.hourly||{},now=Date.now();
+        const series=mm.time?.length?mm:hh;
+        if(series.time?.length){
+          const ix=series.time.findIndex(t=>new Date(t).getTime()>=now-30*60000);
+          const j=ix>=0?ix:series.time.length-1;
+          speed=Number(series.ocean_current_velocity?.[j]);direction=Number(series.ocean_current_direction?.[j]);currentTime=series.time[j];
+        }
+      }else currentTime=c.time||null;
+      if(Number.isFinite(speed)&&Number.isFinite(direction)){current={speed,direction};currentSource='Modeled ocean current';}
+    }
+    if(current){
+      const mph=current.speed;
+      const knots=mph/1.15078;
+      setCondition('plainCurrentDirection',plainCompass(current.direction)+' · '+Math.round(current.direction)+'°');
+      setCondition('plainCurrentSpeed',mph.toFixed(1)+' mph · '+knots.toFixed(1)+' kt');
+    }else{
+      setCondition('plainCurrentDirection','Unavailable');
+      setCondition('plainCurrentSpeed','Unavailable');
+    }
+    let tideInfo=null;
+    if(results[1].status==='fulfilled'){
+      const stations=(results[1].value.stations||[]).filter(x=>Number.isFinite(Number(x.lat))&&Number.isFinite(Number(x.lng)));
+      const station=stations.map(x=>({...x,distance:milesBetween({lat,lon},{lat:Number(x.lat),lon:Number(x.lng)})})).sort((a,b)=>a.distance-b.distance)[0];
+      if(station){
+        const now=new Date(),start=new Date(now.getTime()-24*3600000),begin=start.toISOString().slice(0,10).replace(/-/g,'');
+        const params=new URLSearchParams({product:'predictions',application:'MyFishingReference',begin_date:begin,range:'72',datum:'MLLW',station:String(station.id),time_zone:'gmt',units:'english',interval:'hilo',format:'json'});
+        const tr=await fetch('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?'+params.toString());
+        if(!tr.ok)throw Error('NOAA tide predictions returned HTTP '+tr.status);
+        const td=await tr.json();if(td.error)throw Error(td.error.message||'NOAA tide predictions unavailable');
+        const events=(td.predictions||[]).map(x=>({type:x.type,level:Number(x.v),when:new Date(x.t.replace(' ','T')+'Z')})).filter(x=>Number.isFinite(x.level)&&Number.isFinite(x.when.getTime())).sort((a,b)=>a.when-b.when);
+        const before=events.filter(x=>x.when<=now).slice(-1)[0],after=events.find(x=>x.when>now);
+        if(before&&after){
+          const rising=after.type==='H',span=after.when-before.when,elapsed=now-before.when,ratio=Math.max(0,Math.min(1,elapsed/span));
+          const smooth=(1-Math.cos(Math.PI*ratio))/2;
+          const height=before.level+(after.level-before.level)*smooth;
+          tideInfo={stage:rising?'Rising':'Falling',height,next:after,station,distance:station.distance};
+        }
+      }
+    }
+    if(tideInfo){
+      setCondition('plainTideStage',tideInfo.stage);
+      setCondition('plainTideLevel',tideInfo.height.toFixed(1)+' ft');
+      setCondition('plainTideNext','Next '+(tideInfo.next.type==='H'?'high':'low')+' tide: '+tideInfo.next.when.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' · '+tideInfo.next.level.toFixed(1)+' ft. NOAA station: '+tideInfo.station.name+' ('+tideInfo.distance.toFixed(1)+' mi away).');
+    }else{
+      setCondition('plainTideStage','Unavailable');setCondition('plainTideLevel','Unavailable');
+      setCondition('plainTideNext','NOAA did not return enough high/low tide predictions to determine the current stage.');
+    }
+    const stage=tideInfo?.stage,dir=current?plainCompass(current.direction):null,speed=current?.speed;
+    let explanation='Some of the requested data is unavailable, so the app cannot give a complete tide-and-current summary.';
+    if(stage&&current){
+      const pace=speed<0.5?'very light':speed<1.5?'light':speed<3?'moderate':'strong';
+      explanation='The tide is '+stage.toLowerCase()+'. The modeled current is flowing toward '+dir+' at a '+pace+' pace ('+speed.toFixed(1)+' mph).';
+      if(stage==='Rising')explanation+=' Water level is moving toward the next high tide; if fishing a pass, compare this broad model direction with the actual flow at your spot.';
+      else explanation+=' Water level is moving toward the next low tide; if fishing a pass, compare this broad model direction with the actual flow at your spot.';
+    }else if(stage) explanation='The tide is '+stage.toLowerCase()+'. Current speed and direction were not available from the marine model for this location.';
+    else if(current) explanation='The modeled current is flowing toward '+dir+' at '+speed.toFixed(1)+' mph, but NOAA tide predictions were unavailable.';
+    setCondition('plainFishingExplanation',explanation);
+    setCondition('tideCurrentUpdated','Updated '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+' · '+label);
+    setCondition('plainCurrentSource',currentSource?currentSource+' from Open-Meteo marine data. Current model grid is about 8 km; coastal accuracy is limited and values may not represent the exact gut, cut, or shoreline seam.': 'Current model did not return a usable value for this location; the app will not substitute a guess.');
+  }
+
   let noaaCurrentStationsPromise=null;
   function setWaterCurrentUnavailable(message){
     ['waterCurrentState','waterCurrentSpeed','waterCurrentDirection','waterCurrentNext'].forEach(id=>setCondition(id,'Unavailable'));
