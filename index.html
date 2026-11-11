@@ -440,6 +440,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
   <button class="main-tab" data-panel="inventoryPanel">Tackle</button>
   <button class="main-tab" data-panel="logPanel">Log</button>
   <button class="main-tab" data-panel="guidesPanel">Guides</button>
+  <button class="main-tab" data-panel="dataManagementPanel">Data Management</button>
   <button class="main-tab" data-panel="helpPanel">Help</button>
 </nav>
 <section id="homePanel" class="panel home-panel">
@@ -541,6 +542,74 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   Tip: Open each guide once while online so your phone has a chance to save it for offline use. Use Safari on iPhone to add this app to your Home Screen.
 </div>
 
+</section>
+<section id="dataManagementPanel" class="panel" hidden>
+  <h2 style="color:var(--navy);margin:0">Data Management</h2>
+  <p class="small-note">Export information, create a complete backup, or import records from another device. Your data is stored locally in this browser unless you export it.</p>
+
+  <div class="log-form">
+    <h3 style="color:var(--navy);margin:0 0 8px">Export Data</h3>
+    <p class="small-note">Choose the type of information to export. Fishing-log exports include catches, Trip Conditions Timeline readings, and catch photos. Inventory exports contain tackle records and are separate from full CastPoint backups.</p>
+    <div class="inventory-actions">
+      <button class="action secondary" id="exportLog" type="button">Export fishing log</button>
+      <button class="action secondary" id="exportInventory" type="button">Export inventory</button>
+    </div>
+    <p id="logImportStatus" class="small-note" role="status"></p>
+  </div>
+
+  <div class="log-form">
+    <h3 style="color:var(--navy);margin:0 0 8px">Create Backup</h3>
+    <p class="small-note">Create one portable file containing your CastPoint records and photos. Keep a copy somewhere outside this device, such as your computer, external drive, or cloud storage.</p>
+    <div class="inventory-actions">
+      <button class="action" id="createFullBackup" type="button">Create full backup</button>
+    </div>
+    <p id="fullBackupStatus" class="small-note" role="status">A full backup includes inventory, gear photos, catches, catch photos, trip condition snapshots, saved fishing locations, and your current freshwater/surf selection.</p>
+  </div>
+
+  <div class="log-form">
+    <h3 style="color:var(--navy);margin:0 0 8px">Import Data / Restore Backup</h3>
+    <p class="small-note">Fishing-log imports add new catches and condition readings without overwriting existing records. Inventory imports restore inventory data. A full-backup restore replaces the corresponding CastPoint data on this device.</p>
+    <div class="inventory-actions">
+      <button class="action secondary" id="importLog" type="button">Import fishing log</button>
+      <input type="file" id="importLogFile" accept="application/json,.json" hidden>
+      <button class="action secondary" id="importInventory" type="button">Import inventory</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <button class="action" id="restoreFullBackup" type="button">Restore full backup</button>
+      <input type="file" id="fullBackupFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="small-note">Before restoring a full backup, export anything on this device that you want to keep. Review the confirmation carefully; a full restore replaces existing records rather than merging them.</p>
+  </div>
+
+  <div class="log-form">
+    <h3 style="color:var(--navy);margin:0 0 8px">Backup Information</h3>
+    <details open><summary><strong>Full backup contents</strong></summary>
+      <p class="small-note">Included: tackle inventory and gear photos; catch entries and catch photos; Trip Conditions Timeline snapshots; saved fishing locations; and the current freshwater/surf selection. Live weather, marine forecasts, tide predictions, maps, and other information fetched from online services are not archived as live data. Load conditions again on the new device when you need current readings.</p>
+    </details>
+    <details><summary><strong>Transfer CastPoint to another device</strong></summary>
+      <ol class="small-note">
+        <li>On the device with your data, open Data Management and select <strong>Create full backup</strong>.</li>
+        <li>Save <strong>castpoint-full-backup.json</strong> somewhere safe outside the device.</li>
+        <li>Transfer that file to the destination phone or computer.</li>
+        <li>Open CastPoint on the destination device, go to Data Management, and select <strong>Restore full backup</strong>.</li>
+        <li>Choose the JSON file and review the replacement warning before confirming.</li>
+        <li>Wait for the completion message, then check your inventory, fishing log, photos, and saved locations.</li>
+      </ol>
+    </details>
+    <details><summary><strong>Fishing-log transfer versus full backup</strong></summary>
+      <p class="small-note">A fishing-log export is smaller and contains catches, Trip Conditions Timeline readings, and catch photos. Importing it adds records that are not already present; matching record IDs are skipped, so importing the same file again will not duplicate records. Existing fishing-log records are never overwritten or deleted.</p>
+      <p class="small-note">A full CastPoint backup includes inventory, gear and catch photos, fishing logs, trip conditions, saved locations, and fishing-mode selection. Restoring it replaces the corresponding data on the destination device.</p>
+      <p class="small-note">Older version 2 fishing-log exports can still be imported, but they did not include photo files. Full backups and fishing-log exports are different file types; choose the matching import or restore action.</p>
+    </details>
+    <details><summary><strong>Important backup tips</strong></summary>
+      <ul class="small-note">
+        <li>Create a new backup after adding important catches, photos, or inventory items.</li>
+        <li>Keep at least one backup copy somewhere other than the phone running CastPoint.</li>
+        <li>Export destination-device data you want to keep before restoring a full backup.</li>
+        <li>Do not close CastPoint while a restore is running. Wait for the completion message.</li>
+        <li>Backups can be large when they contain many photos. Keep the original backup until you have checked the restored data.</li>
+      </ul>
+    </details>
+  </div>
 </section>
 <section id="conditionsPanel" class="panel" hidden>
   <h2 style="color:var(--navy);margin:0">Fishing Conditions</h2>
@@ -749,56 +818,17 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   </div>
   <div class="inventory-actions">
     <button class="action" id="addItem">+ Add item</button>
-    <button class="action secondary" id="exportInventory">Export backup</button>
-    <button class="action secondary" id="importInventory">Import backup</button>
-    <input type="file" id="importFile" accept="application/json" hidden>
   </div>
-  <p class="small-note">Changes are saved in this browser on this device. Export a backup before clearing browser data or moving to another device.</p>
+  <p class="small-note">Changes are saved in this browser on this device. Use Data Management to export or import inventory data and backups.</p>
   <div id="inventoryList" class="inventory-list"></div>
 </section>
 <section id="helpPanel" class="panel" hidden>
   <h2 style="color:var(--navy);margin:0">Fishing Help</h2>
   <p class="small-note">Plain-language explanations of the fishing conditions and tools in this app.</p>
-  <div class="log-form" id="backupRestoreHelp">
-    <h3 style="color:var(--navy);margin:0 0 8px">Back Up &amp; Transfer CastPoint</h3>
-    <p class="small-note">Create one portable file containing your CastPoint records and photos. Keep a copy somewhere outside this device, such as your laptop or cloud storage. You can use the same file to move data between phones and computers.</p>
-    <div class="inventory-actions">
-      <button class="action" id="createFullBackup" type="button">Create full backup</button>
-      <button class="action secondary" id="restoreFullBackup" type="button">Restore full backup</button>
-      <input type="file" id="fullBackupFile" accept="application/json,.json" hidden>
-    </div>
-    <p id="fullBackupStatus" class="small-note" role="status">A full backup includes inventory, gear photos, catches, catch photos, trip condition snapshots, saved fishing locations, and your current freshwater/surf selection.</p>
-    <details><summary><strong>How to transfer data to a new phone or computer</strong></summary>
-      <ol class="small-note">
-        <li>On the device that has your CastPoint data, open Help and select <strong>Create full backup</strong>.</li>
-        <li>Save the downloaded <strong>castpoint-full-backup.json</strong> file somewhere safe. For example, move it to your laptop, an external drive, or cloud storage.</li>
-        <li>On the new device, open the CastPoint app and go to Help.</li>
-        <li>Select <strong>Restore full backup</strong> and choose the saved JSON backup file. If the file is on your laptop, first transfer it to the new phone using your preferred file-sharing method.</li>
-        <li>Review the confirmation. Restoring replaces the corresponding CastPoint data on that device; it does not merge records.</li>
-        <li>Wait for the success message, then check your inventory, fishing log, photos, and saved locations.</li>
-      </ol>
-    </details>
-    <details><summary><strong>What is included and what is not</strong></summary>
-      <p class="small-note">Included: tackle inventory and gear photos; catch entries and catch photos; trip-condition timeline snapshots; saved fishing locations; and the current freshwater/surf selection. Live weather, marine forecasts, tide predictions, maps, and other information fetched from online services are not archived as live data. Load conditions again on the new device when you need current readings.</p>
-    </details>
-    <details><summary><strong>Important backup and restore tips</strong></summary>
-      <ul class="small-note">
-        <li>Create a new backup after adding important catches, photos, or inventory items.</li>
-        <li>Keep at least one backup copy somewhere other than the phone running CastPoint.</li>
-        <li>Restoring replaces inventory, catch records, trip snapshots, and saved locations on the destination device. Export anything on that device you want to keep first.</li>
-        <li>Do not close CastPoint while a restore is running. Wait for the completion message.</li>
-        <li>The file can be large when it contains many photos. Keep the original backup until you have checked the restored data.</li>
-      </ul>
-    </details>
-    <details><summary><strong>Export or import only the fishing log</strong></summary>
-      <ol class="small-note">
-        <li>On the source device, open Fishing Log and select <strong>Export log backup</strong>. The file is named <strong>castpoint-fishing-log.json</strong> and includes catches, Trip Conditions Timeline readings, and catch photos.</li>
-        <li>Transfer that file to the other device. Open Fishing Log there and select <strong>Import log backup</strong>.</li>
-        <li>Choose the exported JSON file and review the import summary. Import adds records that are not already present; matching record IDs are skipped, so importing the same file again will not duplicate those records.</li>
-        <li>Existing fishing-log records are never overwritten by a log import. To replace all CastPoint data on a device, use the separate full-backup restore instead and read its overwrite warning carefully.</li>
-      </ol>
-      <p class="small-note">Older version 2 fishing-log exports can still be imported, but they did not include photo files. A full CastPoint backup is a different file and must be restored from this Help section.</p>
-    </details>
+  <div class="log-form">
+    <h3 style="color:var(--navy);margin:0 0 8px">Managing your CastPoint data</h3>
+    <p class="small-note">Export, import, and backup tools are now grouped in the <strong>Data Management</strong> tab, located after Guides. Open it whenever you need to transfer information to another device or protect your records.</p>
+    <button class="action" type="button" data-open-panel="dataManagementPanel">Open Data Management</button>
   </div>
   <div class="log-form">
     <h3 style="color:var(--navy);margin:0 0 8px">Understanding Fishing Conditions</h3>
@@ -861,7 +891,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <div class="inventory-actions"><button class="action" id="recordConditions" type="button">Record current conditions</button><span id="tripLogStatus" class="small-note" role="status">Load conditions for a fishing spot, then record a snapshot.</span></div>
     <div id="tripConditionsList" class="catch-list"><p class="small-note">No trip condition readings recorded yet.</p></div>
   </div>
-  <div class="log-toolbar"><h3 style="color:var(--navy);margin:14px 0 4px">Your catches</h3><div class="inventory-actions" style="margin:8px 0"><button class="action secondary" id="exportLog" type="button">Export log backup</button><button class="action secondary" id="importLog" type="button">Import log backup</button><input type="file" id="importLogFile" accept="application/json,.json" hidden></div></div><p id="logImportStatus" class="small-note" role="status"></p>
+  <h3 style="color:var(--navy);margin:14px 0 4px">Your catches</h3>
   <div id="catchList" class="catch-list"><p class="small-note">Your saved catches will appear here.</p></div>
 </section>
 
