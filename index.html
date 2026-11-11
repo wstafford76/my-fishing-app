@@ -645,6 +645,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <button class="action" id="conditionGPS" type="button">Use my GPS</button>
   </div>
   <div id="conditionStatus" class="small-note" role="status">Choose a fishing location or use your phone's GPS to load conditions.</div>
+  <div id="conditionSearchResults" class="saved-spots-list" aria-label="Location search matches" hidden></div>
   <section class="saved-spots" aria-label="Saved fishing locations">
     <div class="saved-spots-heading"><div><span class="home-eyebrow">YOUR FAVORITE WATER</span><h3>Saved fishing locations</h3></div><button id="saveCurrentSpot" class="action" type="button" disabled>＋ Save current spot</button></div>
     <div id="savedSpotsList" class="saved-spots-list"><p class="small-note">Your saved ponds, beaches, piers, and other spots will appear here.</p></div>
@@ -1911,42 +1912,39 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   }
   async function findConditionPlace() {
     const q=document.getElementById('conditionPlace').value.trim();
+    const resultsPanel=document.getElementById('conditionSearchResults');
+    if(resultsPanel){resultsPanel.hidden=true;resultsPanel.replaceChildren();}
     if(!q){conditionStatus.textContent='Enter a fishing location first.';return;}
-    conditionStatus.textContent='Finding location…';
+    conditionStatus.textContent='Searching for matching places…';
     try{
-      const normalized=q.toLowerCase().replace(/[.,]/g,' ').replace(/\\s+/g,' ').trim();
+      const normalized=q.toLowerCase().replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
       const aliases=[
         {match:['san luis pass','san luis pass tx','san luis pass texas'],lat:29.0818,lon:-95.1252,label:'San Luis Pass, Texas'},
         {match:['kickerillo mischer preserve','kickerillo-mischer preserve','kickerillo mischer','kickerillo-mischer','kickerillo mischer park','kickerillo-mischer park'],lat:29.9871,lon:-95.5642,label:'Kickerillo-Mischer Preserve, Houston, Texas'}
       ];
       const known=aliases.find(a=>a.match.includes(normalized));
       if(known){await loadConditions(known.lat,known.lon,known.label,q);return;}
-      const attempts=[q,q+', USA'];
-      let matches=[];
-      for(const term of [...new Set(attempts.map(x=>x.trim()).filter(Boolean))]){
-        const url='https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(term)+'&count=10&countryCode=US&language=en&format=json';
-        const response=await fetch(url);
-        if(!response.ok)throw Error('Location search service is temporarily unavailable.');
-        const data=await response.json();
-        if(data.error)throw Error(data.reason||'Location search failed.');
-        if(data.results&&data.results.length){matches=data.results;break;}
-      }
-      if(matches.length){
-        const stateNames=['texas','florida','louisiana','alabama','mississippi','georgia','south carolina','north carolina','virginia','california','oregon','washington','new york','new jersey','maine','massachusetts'];const requestedState=stateNames.find(name=>q.toLowerCase().includes(name))||null;const p=(requestedState&&matches.find(x=>String(x.admin1||'').toLowerCase()===requestedState))||matches[0];
-        await loadConditions(p.latitude,p.longitude,[p.name,p.admin1,p.country].filter(Boolean).join(', '),q);
-        return;
-      }
-      // OpenStreetMap/Nominatim fallback finds named parks, preserves, piers, beaches and other landmarks.
-      const landmarkQuery=encodeURIComponent(q+', USA');
-      const landmarkUrl='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&addressdetails=1&countrycodes=us&q='+landmarkQuery;
-      const landmarkResponse=await fetch(landmarkUrl,{headers:{'Accept':'application/json'}});
-      if(!landmarkResponse.ok)throw Error('The landmark search service is temporarily unavailable. Try again or use GPS.');
-      const landmarks=await landmarkResponse.json();
-      const usLandmarks=landmarks||[];
-      if(!usLandmarks.length)throw Error('Could not find that named place in the United States. Add the state to narrow the search, or use GPS while you are there.');
-      const p=usLandmarks[0];
-      await loadConditions(Number(p.lat),Number(p.lon),p.name||p.display_name.split(',')[0]+', '+(p.address?.state||'USA'),q);
-    }catch(e){conditionStatus.textContent=e.message||'Could not find that location. Try a nearby town.';}
+      const stateNames=['alabama','alaska','arizona','arkansas','california','colorado','connecticut','delaware','florida','georgia','hawaii','idaho','illinois','indiana','iowa','kansas','kentucky','louisiana','maine','maryland','massachusetts','michigan','minnesota','mississippi','missouri','montana','nebraska','nevada','new hampshire','new jersey','new mexico','new york','north carolina','north dakota','ohio','oklahoma','oregon','pennsylvania','rhode island','south carolina','south dakota','tennessee','texas','utah','vermont','virginia','washington','west virginia','wisconsin','wyoming'];
+      const requestedState=stateNames.find(name=>normalized.includes(name))||null;
+      const [geoResult,landmarkResult]=await Promise.allSettled([
+        fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=10&countryCode=US&language=en&format=json').then(async r=>{if(!r.ok)throw Error('Place search unavailable');return r.json();}),
+        fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&addressdetails=1&countrycodes=us&q='+encodeURIComponent(q+', USA'),{headers:{'Accept':'application/json'}}).then(async r=>{if(!r.ok)throw Error('Landmark search unavailable');return r.json();})
+      ]);
+      const candidates=[];
+      if(geoResult.status==='fulfilled')for(const p of (geoResult.value.results||[]))candidates.push({lat:Number(p.latitude),lon:Number(p.longitude),name:p.name||q,city:p.name||'',state:p.admin1||'',country:p.country||'United States',type:p.feature||p.type||'Place'});
+      if(landmarkResult.status==='fulfilled')for(const p of (landmarkResult.value||[])){const x=p.address||{};candidates.push({lat:Number(p.lat),lon:Number(p.lon),name:p.name||p.display_name.split(',')[0]||q,city:x.city||x.town||x.village||x.county||'',state:x.state||x.state_district||'',country:'United States',type:p.type||p.class||'Landmark'});}
+      const unique=[];
+      for(const p of candidates){if(!Number.isFinite(p.lat)||!Number.isFinite(p.lon))continue;if(unique.some(x=>Math.abs(x.lat-p.lat)<0.002&&Math.abs(x.lon-p.lon)<0.002))continue;unique.push(p);}
+      if(!unique.length)throw Error('No matching U.S. places found. Try adding a town or state.');
+      const home={lat:30.0799,lon:-95.4172};
+      const miles=(a,b)=>{const rad=v=>v*Math.PI/180,dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon),h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 3958.8*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));};
+      unique.forEach(p=>p.distance=miles(home,p));
+      unique.sort((a,b)=>{if(requestedState){const am=a.state.toLowerCase()===requestedState,bm=b.state.toLowerCase()===requestedState;if(am!==bm)return am?-1:1;}else{const at=a.state.toLowerCase()==='texas',bt=b.state.toLowerCase()==='texas';if(at!==bt)return at?-1:1;}return a.distance-b.distance;});
+      if(!resultsPanel)throw Error('Location results panel is unavailable. Reload and try again.');
+      const heading=document.createElement('p');heading.className='small-note';heading.textContent=unique.length+' possible match'+(unique.length===1?'':'es')+' found. Choose the correct place before loading conditions.';resultsPanel.append(heading);
+      unique.slice(0,10).forEach(p=>{const button=document.createElement('button');button.type='button';button.className='action secondary';button.style.display='block';button.style.width='100%';button.style.textAlign='left';button.style.margin='6px 0';const place=[p.name,p.city&&p.city!==p.name?p.city:'',p.state,p.country].filter(Boolean).join(', ');button.textContent=place+' · '+p.distance.toFixed(0)+' mi from Spring, TX · '+p.type;button.addEventListener('click',async()=>{resultsPanel.hidden=true;resultsPanel.replaceChildren();document.getElementById('conditionPlace').value=place;conditionStatus.textContent='Selected '+place+'. Loading conditions…';try{await loadConditions(p.lat,p.lon,place,q);}catch(e){conditionStatus.textContent=e.message||'Could not load conditions for this place.';}});resultsPanel.append(button);});
+      resultsPanel.hidden=false;conditionStatus.textContent='Select the matching location from the results below.';
+    }catch(e){conditionStatus.textContent=e.message||'Could not find that location. Try adding a nearby town or state.';}
   }
   document.getElementById('conditionSearch').addEventListener('click',findConditionPlace);
   document.getElementById('conditionPlace').addEventListener('keydown',e=>{if(e.key==='Enter')findConditionPlace();});
