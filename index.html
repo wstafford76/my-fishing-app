@@ -13,6 +13,7 @@
 <title>CastPoint</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
 :root {
@@ -551,10 +552,12 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <h3 style="color:var(--navy);margin:0 0 8px">Export Data</h3>
     <p class="small-note">Choose the type of information to export. Fishing-log exports include catches, Trip Conditions Timeline readings, and catch photos. Inventory exports contain tackle records. A complete backup includes all supported CastPoint records and photos.</p>
     <div class="inventory-actions">
-      <button class="action secondary" id="exportLog" type="button">Export fishing log</button>
+      <button class="action secondary" id="exportLog" type="button">Export fishing log (JSON)</button>
+      <button class="action secondary" id="exportLogSpreadsheet" type="button">Export fishing log (Excel)</button>
       <button class="action secondary" id="exportInventory" type="button">Export Inventory Data</button>
     </div>
     <p id="logImportStatus" class="small-note" role="status"></p>
+    <p id="spreadsheetExportStatus" class="small-note" role="status"></p>
   </div>
 
   <div class="log-form">
@@ -870,6 +873,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   <form id="catchForm" class="log-form">
     <div class="form-grid">
       <label>Date<input id="catchDate" name="date" type="date" required></label>
+      <label>Time<input id="catchTime" name="time" type="time"></label>
       <label>Fishing style<select id="catchMode" name="mode"><option>Freshwater</option><option>Surf · Gulf Coast</option></select></label>
       <label class="wide">Location<input name="location" id="catchLocation" placeholder="e.g. San Luis Pass, Galveston"></label>
       <label>Species<input name="species" required placeholder="e.g. Redfish, speckled trout, bass"></label>
@@ -1954,6 +1958,9 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   try{catchEntries=JSON.parse(localStorage.getItem(LOG_KEY)||'[]');if(!Array.isArray(catchEntries))catchEntries=[];}catch(e){catchEntries=[];}
   const catchForm=document.getElementById('catchForm'),photoInput=document.getElementById('catchPhotos'),preview=document.getElementById('photoPreview'),catchList=document.getElementById('catchList');
   document.getElementById('catchDate').value=localDate(new Date());
+  const catchTimeInput=document.getElementById('catchTime');
+  function localTimeValue(date=new Date()){return String(date.getHours()).padStart(2,'0')+':'+String(date.getMinutes()).padStart(2,'0');}
+  catchTimeInput.value=localTimeValue();
   document.getElementById('catchMode').value=fishingMode==='surf'?'Surf · Gulf Coast':'Freshwater';
   document.getElementById('catchLocation').value=conditionCoords?.label||document.getElementById('conditionPlace').value||'';
   function openPhotoDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('photos'))req.result.createObjectStore('photos');};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
@@ -2054,7 +2061,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     document.getElementById('catchStatHeaviestMeta').textContent=heaviest?heaviest.entry.species+' · '+heaviest.entry.date:'Add a weight to track records';
   }
   async function renderLog(){updateCatchStats();catchList.innerHTML='';if(!catchEntries.length){catchList.innerHTML='<p class="small-note">No catches logged yet. Add your first catch above.</p>';return;}for(const entry of [...catchEntries].sort((a,b)=>b.date.localeCompare(a.date))){const card=document.createElement('article');card.className='catch-card';const title=document.createElement('h3');title.textContent=entry.species;const meta=document.createElement('div');meta.className='catch-meta';meta.textContent=[entry.date,entry.location,entry.mode].filter(Boolean).join(' · ');card.append(title,meta);const details=document.createElement('p');details.textContent=[entry.length&&'Length: '+entry.length,entry.weight&&'Weight: '+entry.weight,entry.bait&&'Bait/lure: '+entry.bait,entry.rig&&'Rig: '+entry.rig].filter(Boolean).join('  |  ');card.append(details);if(entry.notes){const note=document.createElement('p');note.textContent=entry.notes;card.append(note);}if(entry.conditions){const c=entry.conditions,summary=document.createElement('p');summary.textContent='Conditions logged: '+[c.temperatureF!=null?'Temp '+c.temperatureF+'°F':null,c.windMph!=null?'Wind '+c.windMph+' mph':null,c.pressureHpa!=null?'Pressure '+c.pressureHpa+' hPa':null,c.pressureTrend?'Pressure '+c.pressureTrend:null,c.pressureChange24hHpa!=null?'24h '+(c.pressureChange24hHpa>0?'+':'')+c.pressureChange24hHpa.toFixed(1)+' hPa':null,c.waveHeightFt!=null?'Waves '+c.waveHeightFt+' ft':null].filter(Boolean).join(' · ');card.append(summary);}if(entry.photos?.length){const photos=document.createElement('div');photos.className='catch-photos';for(const id of entry.photos){try{const blob=await photoGet(id);if(blob){const img=document.createElement('img');img.alt='Catch photo';img.src=URL.createObjectURL(blob);photos.append(img);}}catch(e){}}card.append(photos);}const actions=document.createElement('div');actions.className='item-buttons';const del=document.createElement('button');del.type='button';del.textContent='Delete catch';del.addEventListener('click',async()=>{if(!confirm('Delete this catch and its saved photos?'))return;for(const id of entry.photos||[]){try{await photoDelete(id);}catch(e){}}catchEntries=catchEntries.filter(x=>x.id!==entry.id);if(saveLog())renderLog();});actions.append(del);card.append(actions);catchList.append(card);}}
-  catchForm.addEventListener('submit',async event=>{event.preventDefault();const btn=document.getElementById('saveCatch'),status=document.getElementById('logStatus');btn.disabled=true;status.textContent='Saving catch and photos…';const data=new FormData(catchForm),entry={id:'catch-'+Date.now()};['date','mode','location','species','length','weight','bait','rig','notes'].forEach(k=>entry[k]=String(data.get(k)||'').trim());entry.photos=[];if(lastConditionSnapshot){entry.conditions={...lastConditionSnapshot};entry.conditions.location=entry.location||entry.conditions.location;}try{for(const file of Array.from(photoInput.files||[]).slice(0,6)){const id=entry.id+'-'+entry.photos.length;const blob=await compressPhoto(file);await photoPut(id,blob);entry.photos.push(id);}catchEntries.push(entry);if(saveLog()){catchForm.reset();document.getElementById('catchDate').value=localDate(new Date());preview.innerHTML='';status.textContent='Catch saved on this device.';await renderLog();}else{for(const id of entry.photos)await photoDelete(id);}}catch(e){status.textContent='Could not save: '+e.message;}finally{btn.disabled=false;}});
+  catchForm.addEventListener('submit',async event=>{event.preventDefault();const btn=document.getElementById('saveCatch'),status=document.getElementById('logStatus');btn.disabled=true;status.textContent='Saving catch and photos…';const data=new FormData(catchForm),entry={id:'catch-'+Date.now()};['date','time','mode','location','species','length','weight','bait','rig','notes'].forEach(k=>entry[k]=String(data.get(k)||'').trim());entry.photos=[];if(lastConditionSnapshot){entry.conditions={...lastConditionSnapshot};entry.conditions.location=entry.location||entry.conditions.location;}try{for(const file of Array.from(photoInput.files||[]).slice(0,6)){const id=entry.id+'-'+entry.photos.length;const blob=await compressPhoto(file);await photoPut(id,blob);entry.photos.push(id);}catchEntries.push(entry);if(saveLog()){catchForm.reset();document.getElementById('catchDate').value=localDate(new Date());catchTimeInput.value=localTimeValue();preview.innerHTML='';status.textContent='Catch saved on this device.';await renderLog();}else{for(const id of entry.photos)await photoDelete(id);}}catch(e){status.textContent='Could not save: '+e.message;}finally{btn.disabled=false;}});
   const logImportStatus=document.getElementById('logImportStatus');
   document.getElementById('exportLog').addEventListener('click',async()=>{
     const button=document.getElementById('exportLog');button.disabled=true;logImportStatus.textContent='Preparing fishing log and catch photos…';
@@ -2066,6 +2073,50 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       logImportStatus.textContent='Fishing log exported: '+catchEntries.length+' catches, '+tripConditionEntries.length+' condition readings, and '+photos.length+' photos.';
     }catch(e){logImportStatus.textContent='Export failed: '+e.message;alert('Could not export the fishing log: '+e.message);}
     finally{button.disabled=false;}
+  });
+  const spreadsheetExportButton=document.getElementById('exportLogSpreadsheet');
+  const spreadsheetExportStatus=document.getElementById('spreadsheetExportStatus');
+  spreadsheetExportButton.addEventListener('click',()=>{
+    spreadsheetExportButton.disabled=true;
+    spreadsheetExportStatus.textContent='Preparing Excel spreadsheet…';
+    try{
+      if(!window.XLSX)throw Error('The Excel spreadsheet library did not load. Check your internet connection and try again.');
+      const rows=catchEntries.map(entry=>{
+        const c=entry.conditions||{};
+        return {
+          'Date':entry.date||'',
+          'Time':entry.time||'',
+          'Species':entry.species||'',
+          'Length':entry.length||'',
+          'Weight':entry.weight||'',
+          'Bait / Lure':entry.bait||'',
+          'Rig / Presentation':entry.rig||'',
+          'Location':entry.location||'',
+          'Fishing Style':entry.mode||'',
+          'Air Temperature (°F)':c.temperatureF??'',
+          'Wind Speed (mph)':c.windMph??'',
+          'Wind Gust (mph)':c.windGustMph??'',
+          'Wind Direction (degrees)':c.windDirectionDegrees??'',
+          'Rain (in)':c.precipitationIn??'',
+          'Pressure (hPa)':c.pressureHpa??'',
+          'Pressure Trend':c.pressureTrend||'',
+          'Pressure Change 24h (hPa)':c.pressureChange24hHpa??'',
+          'Wave Height (ft)':c.waveHeightFt??'',
+          'Wave Period (seconds)':c.wavePeriodSec??'',
+          'Sea Temperature (°F)':c.seaTemperatureF??'',
+          'Notes':entry.notes||''
+        };
+      });
+      const worksheet=XLSX.utils.json_to_sheet(rows);
+      worksheet['!cols']=[{wch:13},{wch:10},{wch:20},{wch:13},{wch:13},{wch:24},{wch:24},{wch:28},{wch:20},{wch:20},{wch:18},{wch:18},{wch:23},{wch:13},{wch:16},{wch:18},{wch:25},{wch:18},{wch:22},{wch:23},{wch:45}];
+      const workbook=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook,worksheet,'Fishing Log');
+      XLSX.writeFile(workbook,'castpoint-fishing-log.xlsx');
+      spreadsheetExportStatus.textContent='Excel spreadsheet created with '+rows.length+' catches. Each catch is on its own row. Your CastPoint records were not changed.';
+    }catch(e){
+      spreadsheetExportStatus.textContent='Spreadsheet export failed: '+e.message;
+      alert('Could not export the fishing log spreadsheet: '+e.message);
+    }finally{spreadsheetExportButton.disabled=false;}
   });
   const importLogButton=document.getElementById('importLog'),importLogFile=document.getElementById('importLogFile');
   importLogButton.addEventListener('click',()=>importLogFile.click());
