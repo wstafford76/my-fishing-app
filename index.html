@@ -759,6 +759,38 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 <section id="helpPanel" class="panel" hidden>
   <h2 style="color:var(--navy);margin:0">Fishing Help</h2>
   <p class="small-note">Plain-language explanations of the fishing conditions and tools in this app.</p>
+  <div class="log-form" id="backupRestoreHelp">
+    <h3 style="color:var(--navy);margin:0 0 8px">Back Up &amp; Transfer CastPoint</h3>
+    <p class="small-note">Create one portable file containing your CastPoint records and photos. Keep a copy somewhere outside this device, such as your laptop or cloud storage. You can use the same file to move data between phones and computers.</p>
+    <div class="inventory-actions">
+      <button class="action" id="createFullBackup" type="button">Create full backup</button>
+      <button class="action secondary" id="restoreFullBackup" type="button">Restore full backup</button>
+      <input type="file" id="fullBackupFile" accept="application/json,.json" hidden>
+    </div>
+    <p id="fullBackupStatus" class="small-note" role="status">A full backup includes inventory, gear photos, catches, catch photos, trip condition snapshots, saved fishing locations, and your current freshwater/surf selection.</p>
+    <details><summary><strong>How to transfer data to a new phone or computer</strong></summary>
+      <ol class="small-note">
+        <li>On the device that has your CastPoint data, open Help and select <strong>Create full backup</strong>.</li>
+        <li>Save the downloaded <strong>castpoint-full-backup.json</strong> file somewhere safe. For example, move it to your laptop, an external drive, or cloud storage.</li>
+        <li>On the new device, open the CastPoint app and go to Help.</li>
+        <li>Select <strong>Restore full backup</strong> and choose the saved JSON backup file. If the file is on your laptop, first transfer it to the new phone using your preferred file-sharing method.</li>
+        <li>Review the confirmation. Restoring replaces the corresponding CastPoint data on that device; it does not merge records.</li>
+        <li>Wait for the success message, then check your inventory, fishing log, photos, and saved locations.</li>
+      </ol>
+    </details>
+    <details><summary><strong>What is included and what is not</strong></summary>
+      <p class="small-note">Included: tackle inventory and gear photos; catch entries and catch photos; trip-condition timeline snapshots; saved fishing locations; and the current freshwater/surf selection. Live weather, marine forecasts, tide predictions, maps, and other information fetched from online services are not archived as live data. Load conditions again on the new device when you need current readings.</p>
+    </details>
+    <details><summary><strong>Important backup and restore tips</strong></summary>
+      <ul class="small-note">
+        <li>Create a new backup after adding important catches, photos, or inventory items.</li>
+        <li>Keep at least one backup copy somewhere other than the phone running CastPoint.</li>
+        <li>Restoring replaces inventory, catch records, trip snapshots, and saved locations on the destination device. Export anything on that device you want to keep first.</li>
+        <li>Do not close CastPoint while a restore is running. Wait for the completion message.</li>
+        <li>The file can be large when it contains many photos. Keep the original backup until you have checked the restored data.</li>
+      </ul>
+    </details>
+  </div>
   <div class="log-form">
     <h3 style="color:var(--navy);margin:0 0 8px">Understanding Fishing Conditions</h3>
     <details open><summary><strong>Barometric pressure</strong></summary><p class="small-note">Air pressure is shown in hectopascals (hPa). Rising means pressure is higher than it was 12 or 24 hours earlier; falling means it is lower. Stable means the change is small. Pressure is only one clue—fish do not respond to a single number in a predictable way.</p></details>
@@ -1889,6 +1921,65 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   async function photoPut(id,blob){const db=await openPhotoDB();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').put(blob,id);tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>{db.close();reject(tx.error);};});}
   async function photoGet(id){const db=await openPhotoDB();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readonly'),req=tx.objectStore('photos').get(id);req.onsuccess=()=>{db.close();resolve(req.result||null);};req.onerror=()=>{db.close();reject(req.error);};});}
   async function photoDelete(id){const db=await openPhotoDB();return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readwrite');tx.objectStore('photos').delete(id);tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>{db.close();reject(tx.error);};});}
+
+  function blobToBase64(blob){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');reader.onerror=()=>reject(reader.error||Error('Could not read a saved photo.'));reader.readAsDataURL(blob);});}
+  function base64ToBlob(data,mime){if(typeof data!=='string'||data.length%4!==0||!/^[A-Za-z0-9+/]*={0,2}$/.test(data))throw Error('A photo in this backup is invalid.');const raw=atob(data),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);return new Blob([bytes],{type:mime});}
+  const fullBackupButton=document.getElementById('createFullBackup'),restoreBackupButton=document.getElementById('restoreFullBackup'),fullBackupInput=document.getElementById('fullBackupFile'),fullBackupStatus=document.getElementById('fullBackupStatus');
+  async function getPhotoKeys(){
+    const db=await openPhotoDB();
+    return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readonly'),store=tx.objectStore('photos'),req=store.getAllKeys();req.onsuccess=()=>{db.close();resolve(req.result||[]);};req.onerror=()=>{db.close();reject(req.error);};});
+  }
+  fullBackupButton.addEventListener('click',async()=>{
+    fullBackupButton.disabled=true;restoreBackupButton.disabled=true;fullBackupStatus.textContent='Collecting CastPoint records and photos…';
+    try{
+      const photoIds=[...new Set([...inventory.map(x=>x.photoId),...catchEntries.flatMap(x=>Array.isArray(x.photos)?x.photos:[])].filter(x=>typeof x==='string'&&x))];
+      const photos=[];
+      for(const id of photoIds){const blob=await photoGet(id);if(!blob)throw Error('A photo referenced by your records is missing ('+id+'). No backup was created.');photos.push({id,mime:blob.type||'image/jpeg',data:await blobToBase64(blob)});}
+      const backup={format:'CastPoint Full Backup',version:1,createdAt:new Date().toISOString(),app:'CastPoint',data:{inventory,catchEntries,tripConditionEntries,savedFishingSpots,fishingMode},photos};
+      const blob=new Blob([JSON.stringify(backup)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download='castpoint-full-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
+      fullBackupStatus.textContent='Full backup created: '+inventory.length+' inventory items, '+catchEntries.length+' catches, '+tripConditionEntries.length+' condition snapshots, '+savedFishingSpots.length+' saved locations, and '+photos.length+' photos.';
+    }catch(e){fullBackupStatus.textContent='Backup failed: '+e.message;alert('Could not create a full CastPoint backup: '+e.message);}
+    finally{fullBackupButton.disabled=false;restoreBackupButton.disabled=false;}
+  });
+  restoreBackupButton.addEventListener('click',()=>fullBackupInput.click());
+  fullBackupInput.addEventListener('change',async event=>{
+    const file=event.target.files?.[0];if(!file)return;
+    const addedPhotoIds=[];
+    fullBackupButton.disabled=true;restoreBackupButton.disabled=true;fullBackupStatus.textContent='Checking backup file…';
+    let oldValues={};
+    try{
+      const parsed=JSON.parse(await file.text()),data=parsed?.data,photos=parsed?.photos;
+      if(parsed?.format!=='CastPoint Full Backup'||parsed?.version!==1||!data||!Array.isArray(photos))throw Error('This is not a supported CastPoint full backup.');
+      const arrays=[data.inventory,data.catchEntries,data.tripConditionEntries,data.savedFishingSpots];
+      if(!arrays.every(Array.isArray))throw Error('One or more record collections are missing or invalid.');
+      if(!data.inventory.every(x=>x&&typeof x.name==='string')||!data.catchEntries.every(x=>x&&typeof x.id==='string'&&typeof x.species==='string')||!data.tripConditionEntries.every(x=>x&&typeof x.id==='string')||!data.savedFishingSpots.every(x=>x&&typeof x.label==='string'&&Number.isFinite(x.lat)&&Number.isFinite(x.lon)))throw Error('The backup contains invalid inventory, catch, trip, or location records.');
+      if(!['freshwater','surf'].includes(data.fishingMode))throw Error('The saved fishing mode is invalid.');
+      const photoMap=new Map();
+      for(const p of photos){if(!p||typeof p.id!=='string'||!p.id||photoMap.has(p.id)||!/^image\/(jpeg|png|webp|gif)$/.test(p.mime||''))throw Error('The backup contains an invalid or duplicate photo.');photoMap.set(p.id,p);}
+      const referenced=[...data.inventory.map(x=>x.photoId),...data.catchEntries.flatMap(x=>Array.isArray(x.photos)?x.photos:[])].filter(Boolean);
+      if(referenced.some(id=>typeof id!=='string'||!photoMap.has(id)))throw Error('A gear or catch photo is missing from the backup.');
+      const message='Restore this CastPoint backup?\n\nCreated: '+(parsed.createdAt?new Date(parsed.createdAt).toLocaleString():'Unknown date')+'\nInventory items: '+data.inventory.length+'\nCatches: '+data.catchEntries.length+'\nTrip snapshots: '+data.tripConditionEntries.length+'\nSaved locations: '+data.savedFishingSpots.length+'\nPhotos: '+photos.length+'\n\nThis replaces those records on this device. It does not merge them.';
+      if(!confirm(message))return;
+      fullBackupStatus.textContent='Restoring photos and records…';
+      const restoredInventory=data.inventory.map(x=>({...x})),restoredCatches=data.catchEntries.map(x=>({...x,photos:Array.isArray(x.photos)?[...x.photos]:[]}));
+      for(const p of photos){const blob=base64ToBlob(p.data,p.mime);await photoPut(p.id,blob);addedPhotoIds.push(p.id);}
+      const keys=[STORAGE_KEY,LOG_KEY,TRIP_LOG_KEY,SAVED_SPOTS_KEY];
+      oldValues=Object.fromEntries(keys.map(k=>[k,localStorage.getItem(k)]));
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(restoredInventory));
+      localStorage.setItem(LOG_KEY,JSON.stringify(restoredCatches));
+      localStorage.setItem(TRIP_LOG_KEY,JSON.stringify(data.tripConditionEntries));
+      localStorage.setItem(SAVED_SPOTS_KEY,JSON.stringify(data.savedFishingSpots));
+      inventory=restoredInventory;catchEntries=restoredCatches;tripConditionEntries=data.tripConditionEntries;savedFishingSpots=data.savedFishingSpots;setFishingMode(data.fishingMode);
+      renderInventory();renderLog();renderTripLog();renderSavedSpots();
+      fullBackupStatus.textContent='Restore complete. '+inventory.length+' inventory items, '+catchEntries.length+' catches, '+tripConditionEntries.length+' condition snapshots, '+savedFishingSpots.length+' saved locations, and '+photos.length+' photos restored.';
+    }catch(e){
+      if(Object.keys(oldValues).length){for(const [key,value] of Object.entries(oldValues)){try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);}catch(rollbackError){}}}
+      for(const id of addedPhotoIds){try{await photoDelete(id);}catch(cleanupError){}}
+      fullBackupStatus.textContent='Restore failed: '+e.message;
+      alert('Could not restore this CastPoint backup: '+e.message+' Your previous records were preserved where browser storage allowed.');
+    }finally{event.target.value='';fullBackupButton.disabled=false;restoreBackupButton.disabled=false;}
+  });
   function compressPhoto(file){return new Promise((resolve,reject)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const scale=Math.min(1,1600/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Photo could not be processed.')),'image/jpeg',.82);};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('One photo could not be opened.'));};img.src=url;});}
   photoInput.addEventListener('change',()=>{preview.innerHTML='';Array.from(photoInput.files||[]).slice(0,6).forEach(file=>{const img=document.createElement('img');img.alt='Selected catch photo preview';img.src=URL.createObjectURL(file);preview.appendChild(img);});if(photoInput.files.length>6)document.getElementById('logStatus').textContent='Up to 6 photos per catch; only the first 6 will be saved.';});
   function saveLog(){try{localStorage.setItem(LOG_KEY,JSON.stringify(catchEntries));return true;}catch(e){alert('Could not save the fishing log in this browser. Export a backup and check available storage.');return false;}}
