@@ -1061,19 +1061,75 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   });
   searchEl.addEventListener('input', renderInventory);
   categoryEl.addEventListener('change', renderInventory);
-  document.getElementById('exportInventory').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(inventory,null,2)], {type:'application/json'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'my-fishing-reference-inventory.json'; a.click(); URL.revokeObjectURL(a.href);
+  function readBlobAsBase64(blob){
+    return new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');
+      reader.onerror=()=>reject(reader.error||new Error('Could not read a saved gear photo.'));
+      reader.readAsDataURL(blob);
+    });
+  }
+  function decodeBase64Photo(encoded,mime){
+    if(typeof encoded!=='string'||!/^[A-Za-z0-9+/]*={0,2}$/.test(encoded))throw new Error('A saved photo in this backup is invalid.');
+    const binary=atob(encoded),bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+    return new Blob([bytes],{type:mime||'image/jpeg'});
+  }
+  document.getElementById('exportInventory').addEventListener('click', async () => {
+    const button=document.getElementById('exportInventory');
+    button.disabled=true;
+    try{
+      const photos=[];
+      const photoIds=[...new Set(inventory.map(item=>item.photoId).filter(Boolean))];
+      for(const id of photoIds){
+        const blob=await photoGet(id);
+        if(!blob)throw new Error('A gear photo is missing from this device: '+id+'. The backup was not created.');
+        photos.push({id,mime:blob.type||'image/jpeg',data:await readBlobAsBase64(blob)});
+      }
+      const backup={format:'CastPoint Inventory Backup',version:2,createdAt:new Date().toISOString(),inventory,photos};
+      const blob=new Blob([JSON.stringify(backup)],{type:'application/json'});
+      const url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download='castpoint-inventory-backup.json';a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),1500);
+    }catch(e){alert('Could not create a complete inventory backup: '+e.message);}
+    finally{button.disabled=false;}
   });
   document.getElementById('importInventory').addEventListener('click', () => document.getElementById('importFile').click());
   document.getElementById('importFile').addEventListener('change', async event => {
-    const file = event.target.files[0]; if (!file) return;
-    try {
-      const data = JSON.parse(await file.text());
-      if (!Array.isArray(data) || !data.every(x => x && typeof x.name === 'string')) throw new Error('Invalid inventory backup');
-      if (confirm(`Replace the current inventory with ${data.length} imported entries?`)) { inventory = data; persist(); renderInventory(); }
-    } catch (e) { alert('That file is not a valid CastPoint inventory backup.'); }
-    event.target.value = '';
+    const file=event.target.files[0];if(!file)return;
+    const importedPhotoIds=[];
+    try{
+      const parsed=JSON.parse(await file.text());
+      const isLegacy=Array.isArray(parsed);
+      const data=isLegacy?parsed:parsed?.inventory;
+      const photos=isLegacy?[]:parsed?.photos;
+      if(!isLegacy&&(parsed?.format!=='CastPoint Inventory Backup'||parsed?.version!==2||!Array.isArray(photos)))throw new Error('This is not a supported CastPoint inventory backup.');
+      if(!Array.isArray(data)||!data.every(item=>item&&typeof item==='object'&&!Array.isArray(item)&&typeof item.name==='string'&&item.name.trim()))throw new Error('The inventory entries are invalid.');
+      const photoMap=new Map();
+      if(!isLegacy){
+        for(const photo of photos){
+          if(!photo||typeof photo.id!=='string'||!photo.id||photoMap.has(photo.id)||typeof photo.data!=='string'||!/^image\/(jpeg|png|webp|gif)$/.test(photo.mime||''))throw new Error('The backup contains an invalid or duplicate photo record.');
+          photoMap.set(photo.id,photo);
+        }
+        for(const item of data)if(item.photoId&&!photoMap.has(item.photoId))throw new Error('A gear item refers to a photo that is missing from the backup.');
+      }
+      if(!confirm('Replace the current inventory with '+data.length+' items'+(isLegacy?'? This older backup does not contain gear photos.':' and restore '+photos.length+' gear photos?')))return;
+      const restored=data.map(item=>({...item}));
+      if(!isLegacy){
+        let index=0;
+        for(const photo of photoMap.values()){
+          const newId='gear-restore-'+Date.now()+'-'+index++;
+          await photoPut(newId,decodeBase64Photo(photo.data,photo.mime));
+          importedPhotoIds.push(newId);
+          restored.forEach(item=>{if(item.photoId===photo.id)item.photoId=newId;});
+        }
+      }
+      inventory=restored;persist();renderInventory();
+      alert('Inventory restored successfully'+(isLegacy?'. Older backup format; gear photos were not included.':', including '+importedPhotoIds.length+' gear photos.') );
+    }catch(e){
+      for(const id of importedPhotoIds){try{await photoDelete(id);}catch(cleanupError){}}
+      alert('Could not import this backup: '+e.message+' Your current inventory was not replaced.');
+    }finally{event.target.value='';}
   });
   renderInventory();
 
