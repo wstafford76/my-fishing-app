@@ -801,21 +801,12 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <article class="stat"><strong id="seaDirection">—</strong><span>Wave direction</span></article>
       <article class="stat"><strong id="seaTemp">—</strong><span>Sea temperature</span></article>
     </div>
-    <section class="castpoint-weather-imagery" aria-label="Weather around your fishing spot">
-      <h3 style="color:var(--navy);margin:20px 0 8px">Weather around your spot</h3>
-      <p class="small-note">See rain, storms, and cloud cover near your selected fishing location.</p>
-      <div class="conditions-location" role="group" aria-label="Weather map view" style="display:flex;gap:8px;margin:10px 0">
-        <button class="action" id="cpWeatherRadarToggle" type="button" aria-pressed="true">Radar</button>
-        <button class="action secondary" id="cpWeatherSatelliteToggle" type="button" aria-pressed="false">Satellite</button>
-      </div>
-      <div id="cpWeatherRadarPanel" style="border:1px solid var(--line);border-radius:12px;overflow:hidden">
+    <section class="castpoint-weather-imagery" aria-label="Local weather radar">
+      <h3 style="color:var(--navy);margin:20px 0 8px">Weather radar</h3>
+      <p class="small-note">See rain and storms moving around your fishing location.</p>
+      <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden">
         <iframe id="cpCoastalRadar" title="Rain and storm radar around selected fishing location" loading="lazy" style="display:block;width:100%;height:390px;border:0" src="about:blank"></iframe>
       </div>
-      <div id="cpWeatherSatellitePanel" style="border:1px solid var(--line);border-radius:12px;overflow:hidden" hidden>
-        <iframe id="cpSatelliteFrame" title="Animated satellite cloud imagery around the Gulf Coast" loading="lazy" style="display:block;width:100%;height:390px;border:0" src="about:blank"></iframe>
-        <p class="small-note" style="text-align:center;margin:8px">NOAA animated cloud imagery · GeoColor</p>
-      </div>
-      <p class="small-note" id="cpWeatherMapNote">Radar view: follow rain and storms moving around your fishing area.</p>
     </section>
     <p class="small-note">Weather and marine conditions are estimates for the selected coordinates. Tide predictions come from the nearest available NOAA station and may not represent conditions at your exact shoreline.</p>
     </div>
@@ -1464,39 +1455,11 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   document.getElementById('freshwaterMode').addEventListener('click',()=>setFishingMode('freshwater'));
   document.getElementById('surfMode').addEventListener('click',()=>setFishingMode('surf'));
   setFishingMode('freshwater');
-  // CP-022: simple angler weather map with Radar as the default view.
-  let cpWeatherView='radar',cpWeatherCoordinates=null;
-  function setCastPointWeatherView(view){
-    cpWeatherView=view==='satellite'?'satellite':'radar';
-    const radarView=cpWeatherView==='radar';
-    document.getElementById('cpWeatherRadarPanel').hidden=!radarView;
-    document.getElementById('cpWeatherSatellitePanel').hidden=radarView;
-    const radarButton=document.getElementById('cpWeatherRadarToggle');
-    const satelliteButton=document.getElementById('cpWeatherSatelliteToggle');
-    radarButton.className='action'+(radarView?'':' secondary');
-    satelliteButton.className='action'+(!radarView?'':' secondary');
-    radarButton.setAttribute('aria-pressed',String(radarView));
-    satelliteButton.setAttribute('aria-pressed',String(!radarView));
-    document.getElementById('cpWeatherMapNote').textContent=radarView
-      ?'Radar view: follow rain and storms moving around your fishing area.'
-      :'Satellite view: see cloud cover and weather systems over your fishing area.';
-    if(!radarView&&cpWeatherCoordinates)loadCastPointSatellite(cpWeatherCoordinates.lat,cpWeatherCoordinates.lon);
-  }
-  document.getElementById('cpWeatherRadarToggle').addEventListener('click',()=>setCastPointWeatherView('radar'));
-  document.getElementById('cpWeatherSatelliteToggle').addEventListener('click',()=>setCastPointWeatherView('satellite'));
-  function loadCastPointSatellite(lat,lon){
-    const frame=document.getElementById('cpSatelliteFrame');if(!frame)return;
-    // NOAA GOES-East GeoColor loop; use the closest broad Gulf/Southeast sector for this first simple version.
-    const sector=lon<-100?'sp':lon<-85?'gm':'se';
-    frame.src='https://www.star.nesdis.noaa.gov/GOES/sector_band.php?sat=G19&band=GEOCOLOR&length=12&sector='+sector;
-  }
+  // CP-022: location-centered weather radar for anglers.
   function updateCastPointRadar(lat,lon){
-    cpWeatherCoordinates={lat,lon};
     const radar=document.getElementById('cpCoastalRadar');if(!radar)return;
     radar.src='https://embed.windy.com/embed2.html?lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&detailLat='+encodeURIComponent(lat)+'&detailLon='+encodeURIComponent(lon)+'&width=650&height=450&zoom=6&level=surface&overlay=radar&product=radar&menu=&message=true&marker=true&calendar=now&type=map&location=coordinates';
-    if(cpWeatherView==='satellite')loadCastPointSatellite(lat,lon);
   }
-  setCastPointWeatherView('radar');
   const setCondition = (id,value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
   const fmt = (v,unit,digits=0) => Number.isFinite(v) ? Number(v).toFixed(digits)+unit : '—';
   const compass = v => Number.isFinite(v) ? ['N','NE','E','SE','S','SW','W','NW'][Math.round((((v%360)+360)%360)/45)%8]+' ('+Math.round(v)+'°)' : '—';
