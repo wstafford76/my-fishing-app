@@ -1963,7 +1963,10 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       if(!confirm(message))return;
       fullBackupStatus.textContent='Restoring photos and records…';
       const restoredInventory=data.inventory.map(x=>({...x})),restoredCatches=data.catchEntries.map(x=>({...x,photos:Array.isArray(x.photos)?[...x.photos]:[]}));
-      for(const p of photos){const blob=base64ToBlob(p.data,p.mime);await photoPut(p.id,blob);addedPhotoIds.push(p.id);}
+      const photoIdMap=new Map();
+      for(let i=0;i<photos.length;i++){const p=photos[i],newId='castpoint-restore-'+Date.now()+'-'+i;const blob=base64ToBlob(p.data,p.mime);await photoPut(newId,blob);addedPhotoIds.push(newId);photoIdMap.set(p.id,newId);}
+      restoredInventory.forEach(item=>{if(item.photoId)item.photoId=photoIdMap.get(item.photoId);});
+      restoredCatches.forEach(entry=>{entry.photos=entry.photos.map(id=>photoIdMap.get(id));});
       const keys=[STORAGE_KEY,LOG_KEY,TRIP_LOG_KEY,SAVED_SPOTS_KEY];
       oldValues=Object.fromEntries(keys.map(k=>[k,localStorage.getItem(k)]));
       localStorage.setItem(STORAGE_KEY,JSON.stringify(restoredInventory));
