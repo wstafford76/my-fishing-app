@@ -670,6 +670,14 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <div class="dashboard-section-title">Pressure movement · last 24 hours</div>
     <div class="dashboard-pressure"><svg id="dashboardPressureChart" viewBox="0 0 320 82" role="img" aria-label="Barometric pressure trend"></svg><div id="dashboardPressureNote" class="dashboard-pressure-note">Pressure history will appear when available.</div></div>
     <div class="dashboard-daylight"><span>☀ Sunrise <strong id="dashSunrise">—</strong></span><span>☀ Sunset <strong id="dashSunset">—</strong></span></div>
+    <div class="dashboard-section-title">Moon phase &amp; lunar outlook</div>
+    <div class="dashboard-pressure" id="moonPhaseCard">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong id="moonPhaseName">Calculating moon phase…</strong><strong id="moonIllumination">—</strong></div>
+      <p id="moonPhaseDate" class="dashboard-pressure-note">Based on the selected date</p>
+      <div class="dashboard-daylight"><span>Next new moon <strong id="moonNextNew">—</strong></span><span>Next full moon <strong id="moonNextFull">—</strong></span></div>
+      <p id="moonSpringNeap" class="dashboard-pressure-note"></p>
+      <p class="dashboard-pressure-note">Lunar phase can influence tidal range, nighttime light, and feeding patterns, but fish activity varies by species, weather, water clarity, and location. Actual local NOAA tide predictions—not moon phase alone—are used for tide timing and water-movement scoring.</p>
+    </div>
   </section>
   <div class="log-form" style="margin:14px 0">
     <h3 style="color:var(--navy);margin:0 0 4px">Fishing Map</h3>
@@ -1969,10 +1977,39 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     return {events:allEvents,station:station.name};
   }
 
+  const SYNODIC_MONTH=29.530588853,NEW_MOON_EPOCH=Date.UTC(2000,0,6,18,14);
+  function moonDataForDate(dateString){
+    const date=new Date((dateString||localDate(new Date()))+'T12:00:00Z');
+    const age=((date.getTime()-NEW_MOON_EPOCH)/86400000%SYNODIC_MONTH+SYNODIC_MONTH)%SYNODIC_MONTH;
+    const fraction=age/SYNODIC_MONTH,illumination=(1-Math.cos(2*Math.PI*fraction))/2*100;
+    const phases=[['New Moon',0],['Waxing Crescent',0.125],['First Quarter',0.25],['Waxing Gibbous',0.375],['Full Moon',0.5],['Waning Gibbous',0.625],['Last Quarter',0.75],['Waning Crescent',0.875]];
+    const phase=phases.reduce((best,item)=>Math.abs(item[1]-fraction)<Math.abs(best[1]-fraction)?item:best,phases[0])[0];
+    function nextPhase(target){
+      let days=(target-age+SYNODIC_MONTH)%SYNODIC_MONTH;
+      if(days<0.02)days=SYNODIC_MONTH;
+      return new Date(date.getTime()+days*86400000);
+    }
+    const newMoon=nextPhase(0),fullMoon=nextPhase(SYNODIC_MONTH/2);
+    const fmt=d=>d.toLocaleDateString([],{month:'short',day:'numeric',year:d.getFullYear()!==date.getFullYear()?'numeric':undefined});
+    const spring=age<2.5||age>SYNODIC_MONTH-2.5||Math.abs(age-SYNODIC_MONTH/2)<2.5;
+    const neap=Math.abs(age-SYNODIC_MONTH/4)<2.5||Math.abs(age-3*SYNODIC_MONTH/4)<2.5;
+    return {age,phase,illumination,newMoon,fullMoon,spring,neap,score:spring?1:0,description:spring?'Near a new or full moon: spring-tide range is commonly stronger.':neap?'Near a quarter moon: neap-tide range is commonly smaller.':'Between spring and neap periods.'};
+  }
+  function renderMoonInfo(dateString){
+    const m=moonDataForDate(dateString);
+    const name=document.getElementById('moonPhaseName');if(!name)return;
+    name.textContent=m.phase;
+    document.getElementById('moonIllumination').textContent=Math.round(m.illumination)+'% illuminated';
+    document.getElementById('moonPhaseDate').textContent='Moon phase for '+new Date((dateString||localDate(new Date()))+'T12:00:00').toLocaleDateString([],{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    document.getElementById('moonNextNew').textContent=m.newMoon.toLocaleDateString([],{month:'short',day:'numeric'});
+    document.getElementById('moonNextFull').textContent=m.fullMoon.toLocaleDateString([],{month:'short',day:'numeric'});
+    document.getElementById('moonSpringNeap').textContent=m.description+' These are astronomical phase estimates, not measured local tide heights.';
+  }
   const conditionDate=document.getElementById('conditionDate');
   const localDate=d=>{const x=new Date(d.getTime()-d.getTimezoneOffset()*60000);return x.toISOString().slice(0,10);};
   const today=localDate(new Date()),lastForecastDay=localDate(new Date(Date.now()+15*86400000));
-  conditionDate.min=today;conditionDate.max=lastForecastDay;conditionDate.value=today;
+  conditionDate.min=today;conditionDate.max=lastForecastDay;
+  renderMoonInfo(today);conditionDate.addEventListener('change',()=>renderMoonInfo(conditionDate.value||today));conditionDate.value=today;
   async function loadTripForecast(){
     const selected=conditionDate.value;
     if(!conditionCoords){document.getElementById('conditionForecastStatus').textContent='Find a location or use GPS before checking a trip forecast.';return;}
@@ -2063,6 +2100,8 @@ data-search="butchers bite bait lures artificial bait lure color selection water
             }
           }
         }
+        const lunar=moonDataForDate(selected);
+        if(lunar.score){score+=lunar.score;reasons.push('Near '+(lunar.age<2.5||lunar.age>SYNODIC_MONTH-2.5?'new moon':'full moon')+' · small lunar spring-tide context bonus (+1)');}
         rows.push({hour,score:Math.max(0,Math.min(100,Math.round(score))),reasons,risks});
       }
       const windows=[];
@@ -2071,6 +2110,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       if(!windows.length){status.textContent='No hourly forecast data was returned for that date.';return;}
       const fmtHour=h=>new Date(selected+'T'+String(h).padStart(2,'0')+':00:00').toLocaleTimeString([],{hour:'numeric'});
       const confidence=selected===localDate(new Date())?'Moderate':'Low to moderate';
+      renderMoonInfo(selected);
       out.innerHTML='<p class="small-note">Each score starts at 50. Forecast conditions add or subtract points; higher scores indicate more favorable conditions, not a percentage chance of catching fish.</p><h4 style="color:var(--navy);margin:14px 0 8px">Top time windows · '+new Date(selected+'T12:00:00').toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'})+'</h4>'+windows.slice(0,4).map((w,n)=>'<article class="stat" style="margin:8px 0"><strong>'+(n+1)+'. '+fmtHour(w.start)+'–'+fmtHour(w.end)+' · '+w.score+'/100</strong><span>'+(w.reasons.join(' · ')||'Mixed conditions')+(w.risks.length?' · Watch: '+w.risks.join(', '):'')+'</span></article>').join('')+'<p class="small-note">Confidence: '+confidence+'. Based on hourly Open-Meteo forecast inputs'+(fishingMode==='surf'?(marine?' and modeled marine wave data.':'; marine model data unavailable for this location.'):'; pressure trend is a weather indicator, not a direct fish-activity measure.')+(fishingMode==='surf'?(tideAvailable?' NOAA tide timing from '+tideStationName+' is included; moving-water periods receive a modest boost and tide turns are treated as possible slack-water periods.':' NOAA tide predictions were unavailable, so tide timing was not scored.'):' Tide timing is not applicable to freshwater.')+' Scores are relative condition rankings, not catch probabilities.</p>';
       out.hidden=false;status.textContent='Ranking complete. Recheck closer to your trip as forecasts change.';
     }catch(e){status.textContent='Could not calculate fishing windows: '+(e.message||'forecast unavailable');}
