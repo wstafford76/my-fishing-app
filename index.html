@@ -2076,10 +2076,10 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     importLogButton.disabled=true;document.getElementById('exportLog').disabled=true;logImportStatus.textContent='Checking fishing log file…';
     try{
       const parsed=JSON.parse(await file.text());let entries,trips,photos,legacy=false;
-      if(parsed?.format==='CastPoint Full Backup')throw Error('This is a full CastPoint backup, not a fishing-log export. Use Help → Restore full backup for that file.');
+      if(parsed?.format==='CastPoint Full Backup')throw Error('This is a full CastPoint backup, not a fishing-log export. Use Data Management → Restore full backup for that file.');
       if(parsed?.format==='CastPoint Fishing Log Backup'&&parsed?.version===3){entries=parsed.entries;trips=parsed.tripConditions;photos=parsed.photos;}
       else if(parsed?.format==='My Fishing Reference Fishing Log Backup'&&parsed?.version===2){entries=parsed.entries;trips=parsed.tripConditions;photos=[];legacy=true;}
-      else throw Error('Unsupported file. Choose a CastPoint Fishing Log Backup (or an older version 2 fishing-log export). Full backups must be restored from Help.');
+      else throw Error('Unsupported file. Choose a CastPoint Fishing Log Backup (or an older version 2 fishing-log export). Full backups must be restored from Data Management.');
       if(!Array.isArray(entries)||!Array.isArray(trips)||!Array.isArray(photos))throw Error('The fishing-log file is incomplete: catches, condition readings, or photos are missing.');
       if(!entries.every(x=>x&&typeof x.id==='string'&&x.id&&typeof x.species==='string')||!trips.every(x=>x&&typeof x.id==='string'&&x.id&&typeof x.capturedAt==='string'))throw Error('The file contains invalid catch or condition records.');
       const photoMap=new Map();
