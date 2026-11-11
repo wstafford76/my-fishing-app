@@ -402,6 +402,17 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 .catch-stat-note{font-size:.72rem;color:var(--muted);margin:10px 2px 0}
 @media(max-width:620px){.catch-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.catch-stat{padding:11px}}
 
+
+/* Inventory photo cards */
+.inventory-item{display:flex;align-items:flex-start;gap:14px}
+.inventory-item-main{flex:1;min-width:0}
+.inventory-photo-slot{margin-top:9px}
+.inventory-photo{display:block;width:100%;max-width:220px;max-height:150px;object-fit:cover;border-radius:12px;border:1px solid #dce4e9}
+.inventory-item .item-buttons{flex-shrink:0}
+#itemForm input[type=file]{font-size:.85rem}
+#itemForm small{display:block;margin-top:5px}
+@media(max-width:480px){.inventory-item{flex-direction:column}.inventory-item .item-buttons{width:100%}.inventory-item .item-buttons button{flex:1}}
+
 </style>
 </head>
 
@@ -955,6 +966,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
         <label>Quantity<input name="quantity" placeholder="e.g. 5, 1 package, TBD"></label>
         <label class="wide">Details<textarea name="details" rows="3"></textarea></label>
         <label class="wide">Status<input name="status" placeholder="Confirmed, needs verification…"></label>
+        <label class="wide">Gear photo<input name="gearPhoto" id="gearPhoto" type="file" accept="image/*"><small class="small-note">Optional photo of this item. Stored on this device.</small></label>
       </div>
       <div class="inventory-actions" style="justify-content:flex-end;margin-bottom:0">
         <button class="action secondary" value="cancel" formnovalidate>Cancel</button>
@@ -988,17 +1000,19 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     populateCategories();
     listEl.innerHTML = filtered.length ? filtered.map(({item,index}) => `
       <article class="inventory-item">
-        <div>
+        <div class="inventory-item-main">
           <div class="item-meta">${escapeHtml(item.box || 'Unassigned')} · ${escapeHtml(item.compartment || '—')} · ${escapeHtml(item.category || 'Other')}</div>
           <h3>${escapeHtml(item.name)}</h3>
           <p>${escapeHtml(item.details || '')}</p>
           <p><strong>Quantity:</strong> ${escapeHtml(item.quantity || 'Not recorded')}${item.status ? ` · <strong>Status:</strong> ${escapeHtml(item.status)}` : ''}</p>
+          <div class="inventory-photo-slot" data-photo-for="${index}"></div>
         </div>
         <div class="item-buttons">
           <button type="button" data-edit="${index}" aria-label="Edit ${escapeHtml(item.name)}">Edit</button>
           <button type="button" data-delete="${index}" aria-label="Delete ${escapeHtml(item.name)}">Delete</button>
         </div>
       </article>`).join('') : '<p class="empty">No inventory items match that search.</p>';
+    filtered.forEach(async ({item,index})=>{if(!item.photoId)return;try{const blob=await photoGet(item.photoId);const slot=listEl.querySelector('[data-photo-for="'+index+'"]');if(blob&&slot){const img=document.createElement('img');img.className='inventory-photo';img.alt=item.name+' gear photo';img.src=URL.createObjectURL(blob);slot.append(img);}}catch(e){}});
     if (q && filtered.length) {
       requestAnimationFrame(() => {
         const firstMatch = listEl.querySelector('.inventory-item');
@@ -1011,17 +1025,24 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     const form = dialog.querySelector('form');
     form.reset();
     dialog.querySelector('#dialogTitle').textContent = index < 0 ? 'Add inventory item' : 'Edit inventory item';
-    if (index >= 0) Object.entries(inventory[index]).forEach(([k,v]) => { if(form.elements[k]) form.elements[k].value = v ?? ''; });
+    if (index >= 0) Object.entries(inventory[index]).forEach(([k,v]) => { if(form.elements[k] && k!=='photoId' && k!=='id') form.elements[k].value = v ?? ''; });
     dialog.showModal();
   }
-  dialog.querySelector('form').addEventListener('submit', event => {
+  dialog.querySelector('form').addEventListener('submit', async event => {
     if (event.submitter && event.submitter.value === 'cancel') return;
     event.preventDefault();
-    const form = event.currentTarget;
-    const item = Object.fromEntries(['box','compartment','name','category','quantity','details','status'].map(k => [k, form.elements[k].value.trim()]));
-    if (!item.name) return;
-    if (editingIndex < 0) inventory.push(item); else inventory[editingIndex] = item;
-    persist(); renderInventory(); dialog.close();
+    const form = event.currentTarget,saveButton=dialog.querySelector('#saveItem');
+    saveButton.disabled=true;
+    try{
+      const item = Object.fromEntries(['box','compartment','name','category','quantity','details','status'].map(k => [k, form.elements[k].value.trim()]));
+      if (!item.name) return;
+      if(editingIndex>=0&&inventory[editingIndex].photoId)item.photoId=inventory[editingIndex].photoId;
+      const file=form.elements.gearPhoto.files?.[0];
+      if(file){const id='gear-'+(editingIndex>=0?(inventory[editingIndex].id||editingIndex):Date.now());const blob=await compressPhoto(file);await photoPut(id,blob);item.photoId=id;}
+      if(editingIndex < 0){item.id='gear-item-'+Date.now();inventory.push(item);}else inventory[editingIndex] = {...inventory[editingIndex],...item};
+      persist();renderInventory();dialog.close();
+    }catch(e){alert('Could not save the gear photo: '+e.message);}
+    finally{saveButton.disabled=false;}
   });
   document.getElementById('addItem').addEventListener('click', () => openEditor());
   listEl.addEventListener('click', event => {
