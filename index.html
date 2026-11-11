@@ -2054,7 +2054,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       if(!entries.every(x=>x&&typeof x.id==='string'&&x.id&&typeof x.species==='string')||!trips.every(x=>x&&typeof x.id==='string'&&x.id&&typeof x.capturedAt==='string'))throw Error('The file contains invalid catch or condition records.');
       const photoMap=new Map();
       for(const p of photos){if(!p||typeof p.id!=='string'||!p.id||photoMap.has(p.id)||!/^image\/(jpeg|png|webp|gif)$/.test(p.mime||''))throw Error('The file contains an invalid or duplicate photo.');photoMap.set(p.id,p);}
-      for(const entry of entries){for(const id of (Array.isArray(entry.photos)?entry.photos:[])){if(typeof id!=='string'||(photos.length&&!photoMap.has(id)))throw Error('A catch photo is missing from the export. Export the log again from the device that has the original photos.');}}
+      for(const entry of entries){for(const id of (Array.isArray(entry.photos)?entry.photos:[])){if(typeof id!=='string'||(!legacy&&!photoMap.has(id)))throw Error('A catch photo is missing from the export. Export the log again from the device that has the original photos.');}}
       const existingCatchIds=new Set(catchEntries.map(x=>x.id)),existingTripIds=new Set(tripConditionEntries.map(x=>x.id));
       const newEntries=entries.filter(x=>!existingCatchIds.has(x.id)),newTrips=trips.filter(x=>!existingTripIds.has(x.id));
       const skipped=entries.length-newEntries.length+trips.length-newTrips.length;
