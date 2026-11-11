@@ -1578,8 +1578,8 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   function classifyFishingLocationText(value){
     const text=String(value||'').toLowerCase();
     const has=words=>words.some(word=>new RegExp('(^|[^a-z])'+word+'([^a-z]|$)','i').test(text));
-    // Known coastal city names are explicit exceptions; otherwise classify water features, not city names.
-    if(has(['freeport texas','freeport tx']))return 'surf';
+    // Recognized coastal communities should select saltwater mode even when reverse geocoding returns a city or neighborhood instead of a water feature.
+    if(has(['galveston','galveston island','freeport texas','freeport tx','surfside beach','surfside','quintana','san luis pass','bolivar peninsula','port bolivar','crystal beach','jamaica beach','kemah','seabrook','texas city','baytown','la porte','shoreacres','san leon','dickinson bay','tiki island']))return 'surf';
     if(has(['san luis pass','pass','beach','ocean','gulf','surf','inlet','jetty','pier','estuary','tidal','saltwater','salt water','bay','harbor','harbour','ship channel','coast','coastal','seaside','sound','lagoon','marina']))return 'surf';
     if(has(['lake','pond','reservoir','creek','river','stream','bayou','freshwater','fresh water','fishing pond','canal']))return 'freshwater';
     return null;
