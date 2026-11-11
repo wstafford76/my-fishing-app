@@ -2137,8 +2137,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     let length='',weight='',lengthIn=null,weightLb=null;
     if(data.lengthValue!==''&&Number.isFinite(Number(data.lengthValue))&&Number(data.lengthValue)>0){const v=Number(data.lengthValue),u=data.lengthUnit;lengthIn=u==='cm'?v/2.54:v;length=v.toFixed(1)+' '+u;}
     if(data.weightValue!==''&&Number.isFinite(Number(data.weightValue))&&Number(data.weightValue)>0){const v=Number(data.weightValue),u=data.weightUnit,sub=Number(data.weightSubValue)||0,su=data.weightSubUnit;const kg=(u==='kg'?v:v/2.2046226218)+(su==='g'?sub/1000:sub*0.028349523125);weightLb=kg*2.2046226218;weight=v.toFixed(2).replace(/\\.?0+$/,'')+' '+u+(sub>0?' '+String(sub)+' '+su:'');}
-    if(lengthIn!==null)return {length, lengthIn, lengthCm:lengthIn*2.54};
-    return {length, lengthIn:null, lengthCm:null, weight, weightLb};
+    return {length, lengthIn, lengthCm:lengthIn!==null?lengthIn*2.54:null, weight, weightLb};
   }
   const catchMode=document.getElementById('catchMode');
   const catchSpecies=document.getElementById('catchSpecies');
