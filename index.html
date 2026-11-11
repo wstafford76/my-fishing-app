@@ -1943,7 +1943,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     if(!q){conditionStatus.textContent='Enter a fishing location first.';return;}
     conditionStatus.textContent='Searching for relevant nearby places…';
     try{
-      const normalized=q.toLowerCase().replace(/[.,]/g,' ').replace(/\\s+/g,' ').trim();
+      const normalized=q.toLowerCase().replace(/[.,]/g,' ').replace(/\s+/g,' ').trim();
       const aliases=[
         {match:['san luis pass','san luis pass tx','san luis pass texas'],lat:29.0818,lon:-95.1252,label:'San Luis Pass, Texas'},
         {match:['kickerillo mischer preserve','kickerillo-mischer preserve','kickerillo mischer','kickerillo-mischer','kickerillo mischer park','kickerillo-mischer park'],lat:29.9871,lon:-95.5642,label:'Kickerillo-Mischer Preserve, Houston, Texas'}
