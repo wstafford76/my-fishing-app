@@ -1584,16 +1584,26 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     return null;
   }
   async function detectModeFromNearbyCoast(lat,lon){
-    // Query public map data in parallel so one slow Overpass mirror cannot consume the detection window.
-    // A mapped coastline or marine feature within 12 km identifies a coastal fishing location nationwide.
+    // Use two independent nationwide coastal signals: mapped marine features and NOAA tidal stations.
     const query='[out:json][timeout:6];(way(around:12000,'+lat+','+lon+')["natural"="coastline"];node(around:12000,'+lat+','+lon+')["place"~"^(sea|ocean)$"];way(around:12000,'+lat+','+lon+')["natural"~"^(bay|strait)$"];way(around:12000,'+lat+','+lon+')["water"~"^(sea|ocean|bay|strait)$"];);out tags 1;';
-    const endpoints=['https://overpass-api.de/api/interpreter?data=','https://overpass.kumi.systems/api/interpreter?data='];
-    const checks=endpoints.map(async endpoint=>{
-      const response=await fetchWithTimeout(endpoint+encodeURIComponent(query),{},6000);
-      if(!response.ok)throw Error('Coast map service unavailable');
-      const data=await response.json();
-      return Array.isArray(data.elements)&&data.elements.length>0;
-    });
+    const distanceMiles=(a,b)=>{const rad=x=>x*Math.PI/180,dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon),h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 3958.8*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));};
+    const checks=[
+      ...['https://overpass-api.de/api/interpreter?data=','https://overpass.kumi.systems/api/interpreter?data='].map(async endpoint=>{
+        const response=await fetchWithTimeout(endpoint+encodeURIComponent(query),{},6000);
+        if(!response.ok)throw Error('Coast map service unavailable');
+        const data=await response.json();
+        return Array.isArray(data.elements)&&data.elements.length>0;
+      }),
+      (async()=>{
+        const response=await fetchWithTimeout('https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations.json?type=tidepredictions&units=english&format=json',{},7000);
+        if(!response.ok)throw Error('NOAA tidal station list unavailable');
+        const data=await response.json(),stations=data.stations||[];
+        return stations.some(station=>{
+          const stationLat=Number(station.lat),stationLon=Number(station.lng);
+          return Number.isFinite(stationLat)&&Number.isFinite(stationLon)&&distanceMiles({lat,lon},{lat:stationLat,lon:stationLon})<=25;
+        });
+      })()
+    ];
     const results=await Promise.allSettled(checks);
     return results.some(result=>result.status==='fulfilled'&&result.value)?'surf':null;
   }
@@ -1614,7 +1624,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   async function loadConditions(lat,lon,label,modeHint='') {
     conditionCoords={lat,lon,label};
     renderSavedSpots();
-    const detectedMode=await Promise.race([detectFishingMode(lat,lon,label,modeHint),new Promise(resolve=>setTimeout(()=>resolve(null),11000))]);
+    const detectedMode=await Promise.race([detectFishingMode(lat,lon,label,modeHint),new Promise(resolve=>setTimeout(()=>resolve(null),12000))]);
     if(detectedMode){
       setFishingMode(detectedMode);
       conditionStatus.textContent='Location identified as '+(detectedMode==='surf'?'saltwater / coastal':'freshwater')+'. Loading conditions…';
