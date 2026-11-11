@@ -1605,8 +1605,8 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       const url='https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&zoom=18&addressdetails=1';
       const response=await fetchWithTimeout(url,{headers:{'Accept':'application/json'}},4000);
       if(response.ok){const place=await response.json(),a=place.address||{},feature=[place.category,place.type,place.addresstype,place.name,a.natural,a.water,a.waterway,a.leisure,a.amenity,a.landuse].filter(Boolean).join(' ').toLowerCase();
-        if(/\b(beach|sea|ocean|gulf|bay|strait|estuary|harbour|harbor|inlet|coast|tidal|salt|pier|jetty|marina|channel)\\b/.test(feature))return 'surf';
-        if(/\b(lake|pond|reservoir|river|stream|creek|canal|waterfall|bayou)\\b/.test(feature))return 'freshwater';
+        if(/\b(beach|sea|ocean|gulf|bay|strait|estuary|harbour|harbor|inlet|coast|tidal|salt|pier|jetty|marina|channel)\b/.test(feature))return 'surf';
+        if(/\b(lake|pond|reservoir|river|stream|creek|canal|waterfall|bayou)\b/.test(feature))return 'freshwater';
       }
     }catch(e){}
     return null;
