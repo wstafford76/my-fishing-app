@@ -2243,7 +2243,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
         await loadConditions(conditionCoords.lat,conditionCoords.lon,conditionCoords.label,fishingMode);
         if(!document.getElementById('conditionForecastResults').hidden)await loadTripForecast();
         if(!document.getElementById('bestWindowsResults').hidden)await calculateBestWindows();
-        if(fishingMap){fishingMap.invalidateSize();updateFishingMap(conditionCoords.lat,conditionCoords.lon,conditionCoords.label);}
+        if(fishingMap)fishingMap.invalidateSize();
         appRefreshStatus.textContent='Updated '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
       }else{
         appRefreshStatus.textContent='App updated';
