@@ -896,7 +896,19 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <label>Time<input id="catchTime" name="time" type="time"></label>
       <label>Fishing style<select id="catchMode" name="mode"><option>Freshwater</option><option>Surf · Gulf Coast</option></select></label>
       <label class="wide">Location<input name="location" id="catchLocation" placeholder="e.g. San Luis Pass, Galveston"></label>
-      <label>Species<input name="species" required placeholder="e.g. Redfish, speckled trout, bass"></label>
+      <label>Species<select name="species" id="catchSpecies" required>
+        <option value="">Select species…</option>
+        <optgroup label="Freshwater" data-species-mode="freshwater">
+          <option>Largemouth Bass</option><option>Smallmouth Bass</option><option>Spotted Bass</option><option>White Bass</option><option>Striped Bass</option><option>Hybrid Striped Bass</option><option>Channel Catfish</option><option>Blue Catfish</option><option>Flathead Catfish</option><option>White Crappie</option><option>Black Crappie</option><option>Bluegill</option><option>Redear Sunfish</option><option>Green Sunfish</option><option> longear Sunfish</option><option>Freshwater Drum</option><option>Common Carp</option><option>Grass Carp</option><option>Gar</option><option>Bowfin</option><option>Yellow Perch</option><option>Walleye</option><option>Other Freshwater Species</option>
+        </optgroup>
+        <optgroup label="Saltwater — Galveston to Lake Jackson / Freeport" data-species-mode="saltwater">
+          <option>Redfish (Red Drum)</option><option>Speckled Trout (Spotted Seatrout)</option><option>Black Drum</option><option>Southern Flounder</option><option>Sheepshead</option><option>Sand Trout (Sand Seatrout)</option><option>Gulf Whiting (Southern Kingfish)</option><option>Atlantic Croaker</option><option>Gafftopsail Catfish</option><option>Hardhead Catfish</option><option>Pompano (Florida Pompano)</option><option>Spanish Mackerel</option><option>Jack Crevalle</option><option>Bluefish</option><option>Ladyfish</option><option>Striped Mullet</option><option>Tarpon</option><option>Tripletail</option>
+          <option>King Mackerel</option><option>Cobia (Ling)</option><option>Atlantic Bonito</option><option>Blacktip Shark</option><option>Atlantic Sharpnose Shark</option><option>Bonnethead Shark</option><option>Bull Shark</option><option>Hammerhead Shark</option><option>Stingray</option><option>Atlantic Spadefish</option><option>Barracuda</option><option>Snook</option><option>Permit</option>
+          <option>Red Snapper</option><option>Lane Snapper</option><option>Vermilion Snapper</option><option>Greater Amberjack</option><option>Goliath Grouper</option><option>Scamp Grouper</option><option>Mahi-Mahi (Dolphinfish)</option><option>Yellowfin Tuna</option><option>Sailfish</option><option>Blue Marlin</option><option>White Marlin</option>
+          <option>Other Saltwater Species</option>
+        </optgroup>
+      </select></label>
+      <label id="otherSpeciesField" hidden>Other species<input id="otherSpecies" name="otherSpecies" placeholder="Enter species name"></label>
       <label>Length<input name="length" placeholder="e.g. 24 in"></label>
       <label>Weight<input name="weight" placeholder="e.g. 5 lb 8 oz"></label>
       <label>Bait / lure<input name="bait" placeholder="e.g. live mullet, soft plastic"></label>
@@ -2021,6 +2033,27 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   let catchEntries=[];
   try{catchEntries=JSON.parse(localStorage.getItem(LOG_KEY)||'[]');if(!Array.isArray(catchEntries))catchEntries=[];}catch(e){catchEntries=[];}
   const catchForm=document.getElementById('catchForm'),photoInput=document.getElementById('catchPhotos'),preview=document.getElementById('photoPreview'),catchList=document.getElementById('catchList');
+  const catchMode=document.getElementById('catchMode');
+  const catchSpecies=document.getElementById('catchSpecies');
+  const otherSpeciesField=document.getElementById('otherSpeciesField');
+  const otherSpeciesInput=document.getElementById('otherSpecies');
+  function syncSpeciesOptions(resetInvalid=true){
+    const saltwater=catchMode.value==='Surf · Gulf Coast';
+    const activeMode=saltwater?'saltwater':'freshwater';
+    catchSpecies.querySelectorAll('optgroup[data-species-mode]').forEach(group=>{
+      group.hidden=group.dataset.speciesMode!==activeMode;
+      group.disabled=group.hidden;
+    });
+    const selected=catchSpecies.selectedOptions[0];
+    if(resetInvalid&&selected?.parentElement?.dataset.speciesMode&&selected.parentElement.dataset.speciesMode!==activeMode)catchSpecies.value='';
+    const isOther=catchSpecies.value.startsWith('Other ');
+    otherSpeciesField.hidden=!isOther;
+    otherSpeciesInput.required=isOther;
+    if(!isOther)otherSpeciesInput.value='';
+  }
+  catchMode.addEventListener('change',()=>syncSpeciesOptions());
+  catchSpecies.addEventListener('change',()=>syncSpeciesOptions(false));
+  syncSpeciesOptions();
   document.getElementById('catchDate').value=localDate(new Date());
   const catchTimeInput=document.getElementById('catchTime');
   function localTimeValue(date=new Date()){return String(date.getHours()).padStart(2,'0')+':'+String(date.getMinutes()).padStart(2,'0');}
@@ -2125,7 +2158,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     document.getElementById('catchStatHeaviestMeta').textContent=heaviest?heaviest.entry.species+' · '+heaviest.entry.date:'Add a weight to track records';
   }
   async function renderLog(){updateCatchStats();catchList.innerHTML='';if(!catchEntries.length){catchList.innerHTML='<p class="small-note">No catches logged yet. Add your first catch above.</p>';return;}for(const entry of [...catchEntries].sort((a,b)=>b.date.localeCompare(a.date))){const card=document.createElement('article');card.className='catch-card';const title=document.createElement('h3');title.textContent=entry.species;const meta=document.createElement('div');meta.className='catch-meta';meta.textContent=[entry.date,entry.location,entry.mode].filter(Boolean).join(' · ');card.append(title,meta);const details=document.createElement('p');details.textContent=[entry.length&&'Length: '+entry.length,entry.weight&&'Weight: '+entry.weight,entry.bait&&'Bait/lure: '+entry.bait,entry.rig&&'Rig: '+entry.rig].filter(Boolean).join('  |  ');card.append(details);if(entry.notes){const note=document.createElement('p');note.textContent=entry.notes;card.append(note);}if(entry.conditions){const c=entry.conditions,summary=document.createElement('p');summary.textContent='Conditions logged: '+[c.temperatureF!=null?'Temp '+c.temperatureF+'°F':null,c.windMph!=null?'Wind '+c.windMph+' mph':null,c.pressureHpa!=null?'Pressure '+c.pressureHpa+' hPa':null,c.pressureTrend?'Pressure '+c.pressureTrend:null,c.pressureChange24hHpa!=null?'24h '+(c.pressureChange24hHpa>0?'+':'')+c.pressureChange24hHpa.toFixed(1)+' hPa':null,c.waveHeightFt!=null?'Waves '+c.waveHeightFt+' ft':null].filter(Boolean).join(' · ');card.append(summary);}if(entry.photos?.length){const photos=document.createElement('div');photos.className='catch-photos';for(const id of entry.photos){try{const blob=await photoGet(id);if(blob){const img=document.createElement('img');img.alt='Catch photo';img.src=URL.createObjectURL(blob);photos.append(img);}}catch(e){}}card.append(photos);}const actions=document.createElement('div');actions.className='item-buttons';const del=document.createElement('button');del.type='button';del.textContent='Delete catch';del.addEventListener('click',async()=>{if(!confirm('Delete this catch and its saved photos?'))return;for(const id of entry.photos||[]){try{await photoDelete(id);}catch(e){}}catchEntries=catchEntries.filter(x=>x.id!==entry.id);if(saveLog())renderLog();});actions.append(del);card.append(actions);catchList.append(card);}}
-  catchForm.addEventListener('submit',async event=>{event.preventDefault();const btn=document.getElementById('saveCatch'),status=document.getElementById('logStatus');btn.disabled=true;status.textContent='Saving catch and photos…';const data=new FormData(catchForm),entry={id:'catch-'+Date.now()};['date','time','mode','location','species','length','weight','bait','rig','notes'].forEach(k=>entry[k]=String(data.get(k)||'').trim());entry.photos=[];if(lastConditionSnapshot){entry.conditions={...lastConditionSnapshot};entry.conditions.location=entry.location||entry.conditions.location;}try{for(const file of Array.from(photoInput.files||[]).slice(0,6)){const id=entry.id+'-'+entry.photos.length;const blob=await compressPhoto(file);await photoPut(id,blob);entry.photos.push(id);}catchEntries.push(entry);if(saveLog()){catchForm.reset();document.getElementById('catchDate').value=localDate(new Date());catchTimeInput.value=localTimeValue();preview.innerHTML='';status.textContent='Catch saved on this device.';await renderLog();}else{for(const id of entry.photos)await photoDelete(id);}}catch(e){status.textContent='Could not save: '+e.message;}finally{btn.disabled=false;}});
+  catchForm.addEventListener('submit',async event=>{event.preventDefault();const btn=document.getElementById('saveCatch'),status=document.getElementById('logStatus');btn.disabled=true;status.textContent='Saving catch and photos…';const data=new FormData(catchForm),entry={id:'catch-'+Date.now()};['date','time','mode','location','length','weight','bait','rig','notes'].forEach(k=>entry[k]=String(data.get(k)||'').trim());entry.species=catchSpecies.value.startsWith('Other ')?String(otherSpeciesInput.value||'').trim():catchSpecies.value;entry.photos=[];if(lastConditionSnapshot){entry.conditions={...lastConditionSnapshot};entry.conditions.location=entry.location||entry.conditions.location;}try{for(const file of Array.from(photoInput.files||[]).slice(0,6)){const id=entry.id+'-'+entry.photos.length;const blob=await compressPhoto(file);await photoPut(id,blob);entry.photos.push(id);}catchEntries.push(entry);if(saveLog()){catchForm.reset();syncSpeciesOptions();document.getElementById('catchDate').value=localDate(new Date());catchTimeInput.value=localTimeValue();preview.innerHTML='';status.textContent='Catch saved on this device.';await renderLog();}else{for(const id of entry.photos)await photoDelete(id);}}catch(e){status.textContent='Could not save: '+e.message;}finally{btn.disabled=false;}});
   const logImportStatus=document.getElementById('logImportStatus');
   document.getElementById('exportLog').addEventListener('click',async()=>{
     const button=document.getElementById('exportLog');button.disabled=true;logImportStatus.textContent='Preparing fishing log and catch photos…';
