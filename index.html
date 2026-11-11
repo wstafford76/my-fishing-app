@@ -232,7 +232,7 @@ dialog h2{margin:0 0 12px;color:var(--navy)}
 .hour-card .hour-icon{font-size:1.35rem;margin:4px 0}
 .hour-card strong{display:block;color:#fff;font-size:1rem}
 .hour-card small{display:block;color:#d8e2eb;font-size:.68rem;margin-top:3px}
-.dashboard-pressure{background:#ffffff12;border:1px solid #ffffff24;border-radius:12px;padding:10px}
+.moon-phase-card{background:linear-gradient(135deg,#102b42,#183b54 58%,#10283d);color:#f7f2e7;border:1px solid #c4a45a55;overflow:hidden}.moon-hero{display:flex;align-items:center;justify-content:center;gap:clamp(18px,4vw,42px);padding:10px 4px 16px}.moon-graphic-wrap{width:clamp(132px,25vw,190px);flex:0 0 auto;filter:drop-shadow(0 8px 18px #0008)}.moon-graphic{display:block;width:100%;height:auto;overflow:visible}.moon-main-info{display:flex;flex-direction:column;gap:8px;min-width:0}.moon-main-info strong:first-child{font-size:clamp(1.25rem,3vw,1.75rem);color:#fff}.moon-main-info strong:nth-child(2){font-size:1.05rem;color:#e5c77d}.moon-orientation{font-size:.88rem;color:#e5d7b5}.moon-upcoming{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border-top:1px solid #d7bd7950;padding:14px 4px}.moon-upcoming-item{display:flex;align-items:center;gap:10px;min-width:0}.moon-small-graphic{width:52px;height:52px;flex:0 0 52px;filter:drop-shadow(0 3px 7px #0007)}.moon-upcoming-item div{display:flex;flex-direction:column;gap:3px}.moon-upcoming-item strong{font-size:.9rem;color:#f4dfaa}.moon-upcoming-item span{font-size:.86rem;color:#fff}.moon-phase-card .dashboard-pressure-note{color:#d5e0e7}@media(max-width:520px){.moon-hero{gap:14px;justify-content:flex-start}.moon-graphic-wrap{width:116px}.moon-main-info strong:first-child{font-size:1.12rem}.moon-upcoming{gap:8px}.moon-small-graphic{width:42px;height:42px;flex-basis:42px}.moon-upcoming-item{gap:7px}.moon-upcoming-item strong,.moon-upcoming-item span{font-size:.78rem}}.dashboard-pressure{background:#ffffff12;border:1px solid #ffffff24;border-radius:12px;padding:10px}
 .dashboard-pressure svg{display:block;width:100%;height:82px;overflow:visible}
 .dashboard-pressure-note{font-size:.75rem;color:#d8e2eb;margin-top:4px}
 .dashboard-daylight{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px}
@@ -671,10 +671,9 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <div class="dashboard-pressure"><svg id="dashboardPressureChart" viewBox="0 0 320 82" role="img" aria-label="Barometric pressure trend"></svg><div id="dashboardPressureNote" class="dashboard-pressure-note">Pressure history will appear when available.</div></div>
     <div class="dashboard-daylight"><span>☀ Sunrise <strong id="dashSunrise">—</strong></span><span>☀ Sunset <strong id="dashSunset">—</strong></span></div>
     <div class="dashboard-section-title">Moon phase &amp; lunar outlook</div>
-    <div class="dashboard-pressure" id="moonPhaseCard">
-      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><strong id="moonPhaseName">Calculating moon phase…</strong><strong id="moonIllumination">—</strong></div>
-      <p id="moonPhaseDate" class="dashboard-pressure-note">Based on the selected date</p>
-      <div class="dashboard-daylight"><span>Next new moon <strong id="moonNextNew">—</strong></span><span>Next full moon <strong id="moonNextFull">—</strong></span></div>
+    <div class="dashboard-pressure moon-phase-card" id="moonPhaseCard">
+      <div class="moon-hero"><div class="moon-graphic-wrap"><svg id="moonMainGraphic" class="moon-graphic" viewBox="0 0 160 160" role="img" aria-label="Calculated moon phase illustration"></svg></div><div class="moon-main-info"><strong id="moonPhaseName">Calculating moon phase…</strong><strong id="moonIllumination">—</strong><span id="moonOrientation" class="moon-orientation">Calculating orientation…</span><p id="moonPhaseDate" class="dashboard-pressure-note">Based on the selected date</p></div></div>
+      <div class="moon-upcoming"><div class="moon-upcoming-item"><svg id="moonUpcomingNewGraphic" class="moon-small-graphic" viewBox="0 0 64 64" role="img" aria-label="New moon illustration"></svg><div><strong>Next new moon</strong><span id="moonNextNew">—</span></div></div><div class="moon-upcoming-item"><svg id="moonUpcomingFullGraphic" class="moon-small-graphic" viewBox="0 0 64 64" role="img" aria-label="Full moon illustration"></svg><div><strong>Next full moon</strong><span id="moonNextFull">—</span></div></div></div>
       <p id="moonSpringNeap" class="dashboard-pressure-note"></p>
       <p class="dashboard-pressure-note">Lunar phase can influence tidal range, nighttime light, and feeding patterns, but fish activity varies by species, weather, water clarity, and location. Actual local NOAA tide predictions—not moon phase alone—are used for tide timing and water-movement scoring.</p>
     </div>
@@ -1996,14 +1995,26 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     const neap=Math.abs(age-SYNODIC_MONTH/4)<2.5||Math.abs(age-3*SYNODIC_MONTH/4)<2.5;
     return {age,phase,illumination,newMoon,fullMoon,spring,neap,score:spring?1:0,description:spring?'Near a new or full moon: spring-tide range is commonly stronger.':neap?'Near a quarter moon: neap-tide range is commonly smaller.':'Between spring and neap periods.'};
   }
+  function moonGraphicMarkup(m,size,id){
+    const r=size*.39,c=size/2,illum=m.illumination/100,waxing=m.age<SYNODIC_MONTH/2,term=Math.max(.01,Math.abs(Math.cos(2*Math.PI*m.age/SYNODIC_MONTH))*r);
+    let lit='';
+    if(illum>.995)lit='<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="url(#'+id+'-lit)"/>';
+    else if(illum>.005)lit=waxing
+      ?'<path d="M '+c+' '+(c-r)+' A '+r+' '+r+' 0 0 1 '+c+' '+(c+r)+' A '+term+' '+r+' 0 0 0 '+c+' '+(c-r)+' Z" fill="url(#'+id+'-lit)"/>'
+      :'<path d="M '+c+' '+(c-r)+' A '+r+' '+r+' 0 0 0 '+c+' '+(c+r)+' A '+term+' '+r+' 0 0 1 '+c+' '+(c-r)+' Z" fill="url(#'+id+'-lit)"/>';
+    return '<defs><radialGradient id="'+id+'-lit" cx="32%" cy="28%" r="75%"><stop offset="0" stop-color="#fff9df"/><stop offset=".68" stop-color="#e9d9aa"/><stop offset="1" stop-color="#bda66e"/></radialGradient><radialGradient id="'+id+'-dark" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#536477"/><stop offset="1" stop-color="#172638"/></radialGradient></defs><circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="url(#'+id+'-dark)" stroke="#d9bd78" stroke-width="'+(size*.012)+'"/>'+lit+'<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="none" stroke="#f0d99d" stroke-opacity=".7" stroke-width="'+(size*.009)+'"/>';
+  }
   function renderMoonInfo(dateString){
-    const m=moonDataForDate(dateString);
-    const name=document.getElementById('moonPhaseName');if(!name)return;
-    name.textContent=m.phase;
-    document.getElementById('moonIllumination').textContent=Math.round(m.illumination)+'% illuminated';
+    const m=moonDataForDate(dateString),name=document.getElementById('moonPhaseName');if(!name)return;
+    name.textContent=m.phase;document.getElementById('moonIllumination').textContent=Math.round(m.illumination)+'% illuminated';
+    document.getElementById('moonOrientation').textContent=m.age<SYNODIC_MONTH/2?'Waxing · illuminated side on the right':'Waning · illuminated side on the left';
+    document.getElementById('moonMainGraphic').innerHTML=moonGraphicMarkup(m,160,'moon-main');
+    document.getElementById('moonMainGraphic').setAttribute('aria-label',m.phase+', '+Math.round(m.illumination)+' percent illuminated');
+    document.getElementById('moonUpcomingNewGraphic').innerHTML=moonGraphicMarkup(moonDataForDate(localDate(m.newMoon)),64,'moon-new');
+    document.getElementById('moonUpcomingFullGraphic').innerHTML=moonGraphicMarkup(moonDataForDate(localDate(m.fullMoon)),64,'moon-full');
     document.getElementById('moonPhaseDate').textContent='Moon phase for '+new Date((dateString||localDate(new Date()))+'T12:00:00').toLocaleDateString([],{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-    document.getElementById('moonNextNew').textContent=m.newMoon.toLocaleDateString([],{month:'short',day:'numeric'});
-    document.getElementById('moonNextFull').textContent=m.fullMoon.toLocaleDateString([],{month:'short',day:'numeric'});
+    document.getElementById('moonNextNew').textContent=m.newMoon.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
+    document.getElementById('moonNextFull').textContent=m.fullMoon.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
     document.getElementById('moonSpringNeap').textContent=m.description+' These are astronomical phase estimates, not measured local tide heights.';
   }
   const conditionDate=document.getElementById('conditionDate');
