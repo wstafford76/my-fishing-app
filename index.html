@@ -329,6 +329,12 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 @media(min-width:621px){.main-tabs{top:0}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
+
+/* Circular logo presentation: crop the square background outside the badge */
+.brand-logo-frame{width:82px;height:82px;flex:0 0 82px;display:block;position:relative;overflow:hidden;border-radius:50%;border:1px solid #d7a83d;box-shadow:0 5px 18px #0006;background:#081725}
+.brand-logo{display:block;width:132%;height:132%;max-width:none;object-fit:cover;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:0;border-radius:0;box-shadow:none}
+@media(max-width:620px){.brand-logo-frame{width:68px;height:68px;flex-basis:68px}}
+
 </style>
 </head>
 
@@ -336,7 +342,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 
 <header class="app-header">
   <div class="wrap app-brand">
-    <img src="icon.png" alt="CastPoint logo" class="brand-logo">
+    <span class="brand-logo-frame"><img src="icon.png" alt="CastPoint logo" class="brand-logo"></span>
     <div class="brand-copy">
       <div class="brand-kicker">YOUR FISHING COMPANION</div>
       <h1>CastPoint</h1>
