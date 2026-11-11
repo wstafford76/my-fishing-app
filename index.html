@@ -1238,6 +1238,42 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     updated.textContent='Direct link to the Texas Fishing Forum inshore fishing section.';
   }
   // Fishing Conditions: GPS/manual place, Open-Meteo weather + marine, NOAA tide predictions.
+  // Shared responsive GPS lookup: use a recent/coarse fix quickly, then refine when needed.
+  function getFishingPosition(onStatus=()=>{}){
+    if(!navigator.geolocation)return Promise.reject({code:0,message:'GPS location is not available in this browser.'});
+    return new Promise((resolve,reject)=>{
+      let settled=false,approximate=null,overallTimer=null;
+      const finish=(position)=>{if(settled)return;settled=true;clearTimeout(overallTimer);resolve(position);};
+      const fail=(error)=>{if(settled)return;settled=true;clearTimeout(overallTimer);reject(error);};
+      const refine=()=>{
+        if(settled)return;
+        onStatus(approximate?'Improving GPS accuracy…':'Waiting for GPS location…');
+        navigator.geolocation.getCurrentPosition(position=>{
+          if(!approximate||position.coords.accuracy<=approximate.coords.accuracy)finish(position);
+          else finish(approximate);
+        },error=>{
+          if(approximate)finish(approximate);
+          else fail(error);
+        },{enableHighAccuracy:true,timeout:9000,maximumAge:0});
+      };
+      overallTimer=setTimeout(()=>{
+        if(approximate)finish(approximate);
+        else fail({code:3,message:'GPS took too long to respond. Check your location settings and try again.'});
+      },15000);
+      onStatus('Checking for a recent location…');
+      navigator.geolocation.getCurrentPosition(position=>{
+        approximate=position;
+        if(position.coords.accuracy<=100)finish(position);
+        else refine();
+      },()=>refine(),{enableHighAccuracy:false,timeout:5000,maximumAge:120000});
+    });
+  }
+  function gpsErrorMessage(error){
+    if(error?.code===1)return 'Location permission was denied. Allow location access in your browser or device settings, then try again.';
+    if(error?.code===2)return 'Your location is unavailable. Check that device location services are enabled, then try again.';
+    if(error?.code===3)return error.message||'GPS timed out. Try again or enter a location manually.';
+    return error?.message||'Could not get your location. Try again or enter a location manually.';
+  }
   const conditionStatus = document.getElementById('conditionStatus');
   const conditionResults = document.getElementById('conditionResults');
   let conditionCoords = null;
@@ -1401,15 +1437,18 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   }
   document.getElementById('mapSatellite').addEventListener('click',()=>setMapLayer('satellite'));
   document.getElementById('mapStreet').addEventListener('click',()=>setMapLayer('street'));
-  document.getElementById('mapGPS').addEventListener('click',()=>{
-    if(!navigator.geolocation){mapStatus.textContent='GPS is not available in this browser.';return;}
-    mapStatus.textContent='Getting your GPS location…';
-    navigator.geolocation.getCurrentPosition(async pos=>{
+  document.getElementById('mapGPS').addEventListener('click',async()=>{
+    const button=document.getElementById('mapGPS');
+    button.disabled=true;
+    try{
+      const pos=await getFishingPosition(message=>mapStatus.textContent=message);
       const lat=pos.coords.latitude,lon=pos.coords.longitude,label='Current GPS location';
       initFishingMap();if(fishingMap)fishingMap.setView([lat,lon],15);
       document.getElementById('conditionPlace').value=label;
-      try{await loadConditions(lat,lon,label);mapStatus.textContent='GPS location selected and conditions loaded.';}catch(e){mapStatus.textContent=e.message;}
-    },err=>{mapStatus.textContent=err.code===1?'GPS permission was denied.':'Could not get GPS location.';},{enableHighAccuracy:true,timeout:15000,maximumAge:300000});
+      mapStatus.textContent='GPS location found (accuracy about '+Math.round(pos.coords.accuracy)+' m). Loading fishing conditions…';
+      try{await loadConditions(lat,lon,label);mapStatus.textContent='GPS location selected and conditions loaded.';}catch(e){mapStatus.textContent='GPS location found, but conditions could not load: '+e.message;}
+    }catch(error){mapStatus.textContent=gpsErrorMessage(error);}
+    finally{button.disabled=false;}
   });
   function classifyFishingLocationText(value){
     const text=String(value||'').toLowerCase();
@@ -1753,10 +1792,15 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   }
   document.getElementById('conditionSearch').addEventListener('click',findConditionPlace);
   document.getElementById('conditionPlace').addEventListener('keydown',e=>{if(e.key==='Enter')findConditionPlace();});
-  document.getElementById('conditionGPS').addEventListener('click',()=>{
-    if(!navigator.geolocation){conditionStatus.textContent='GPS location is not available in this browser.';return;}
-    conditionStatus.textContent='Requesting GPS permission…';
-    navigator.geolocation.getCurrentPosition(pos=>loadConditions(pos.coords.latitude,pos.coords.longitude,'Current GPS location').catch(e=>conditionStatus.textContent=e.message),err=>{conditionStatus.textContent=err.code===1?'Location permission was denied. You can enter a fishing location instead.':'Could not get your location. Try manual location search.';},{enableHighAccuracy:true,timeout:15000,maximumAge:300000});
+  document.getElementById('conditionGPS').addEventListener('click',async()=>{
+    const button=document.getElementById('conditionGPS');
+    button.disabled=true;
+    try{
+      const pos=await getFishingPosition(message=>conditionStatus.textContent=message);
+      conditionStatus.textContent='GPS location found (accuracy about '+Math.round(pos.coords.accuracy)+' m). Loading fishing conditions…';
+      await loadConditions(pos.coords.latitude,pos.coords.longitude,'Current GPS location');
+    }catch(error){conditionStatus.textContent=gpsErrorMessage(error);}
+    finally{button.disabled=false;}
   });
   async function loadNearbyTides(lat,lon,dateValue) {
     setCondition('tideStation','Searching NOAA tide stations…');
