@@ -2107,7 +2107,8 @@ data-search="butchers bite bait lures artificial bait lure color selection water
           'Notes':entry.notes||''
         };
       });
-      const worksheet=XLSX.utils.json_to_sheet(rows);
+      const headers=['Date','Time','Species','Length','Weight','Bait / Lure','Rig / Presentation','Location','Fishing Style','Air Temperature (°F)','Wind Speed (mph)','Wind Gust (mph)','Wind Direction (degrees)','Rain (in)','Pressure (hPa)','Pressure Trend','Pressure Change 24h (hPa)','Wave Height (ft)','Wave Period (seconds)','Sea Temperature (°F)','Notes'];
+      const worksheet=XLSX.utils.aoa_to_sheet([headers,...rows.map(row=>headers.map(header=>row[header]))]);
       worksheet['!cols']=[{wch:13},{wch:10},{wch:20},{wch:13},{wch:13},{wch:24},{wch:24},{wch:28},{wch:20},{wch:20},{wch:18},{wch:18},{wch:23},{wch:13},{wch:16},{wch:18},{wch:25},{wch:18},{wch:22},{wch:23},{wch:45}];
       const workbook=XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook,worksheet,'Fishing Log');
