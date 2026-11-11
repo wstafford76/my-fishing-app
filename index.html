@@ -1545,16 +1545,13 @@ data-search="butchers bite bait lures artificial bait lure color selection water
         const arrow=L.marker(end,{interactive:false,icon:L.divIcon({className:'current-direction-arrow',html:'<span style="display:block;color:#f59e0b;font-size:30px;font-weight:900;line-height:24px;text-shadow:0 1px 3px #fff;transform:rotate('+data.direction+'deg)">↑</span>',iconSize:[26,30],iconAnchor:[13,15]})}).addTo(currentOverlayLayer);
       }
     }
-    const bounds=[];
     if(conditionCoords){
       const selected=[conditionCoords.lat,conditionCoords.lon];
       L.circle(selected,{radius:90,color:'#16a34a',weight:2,fillOpacity:.08}).addTo(currentOverlayLayer)
         .bindPopup('<strong>Selected fishing location</strong><br>'+escapeHtml(conditionCoords.label||'Fishing spot'));
-      bounds.push(selected);
     }
-    if(Number.isFinite(data.stationLat)&&Number.isFinite(data.stationLon))bounds.push([data.stationLat,data.stationLon]);
-    if(bounds.length>1)fishingMap.fitBounds(bounds,{padding:[36,36],maxZoom:12});
-    else if(bounds.length===1)fishingMap.setView(bounds[0],Math.max(fishingMap.getZoom(),13));
+    // Do not fit the map to both the fishing spot and a distant monitoring station.
+    // updateFishingMap owns the selected-spot center and zoom; the overlay must not zoom out.
   }
   function setCurrentOverlayEnabled(enabled){
     currentOverlayEnabled=enabled;
