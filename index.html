@@ -1420,14 +1420,27 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       info.append(name,coords);
       const actions=document.createElement('div');actions.className='saved-spot-actions';
       const open=document.createElement('button');open.type='button';open.className='action';open.textContent='Load spot';open.addEventListener('click',()=>{document.getElementById('conditionPlace').value=spot.label;loadConditions(spot.lat,spot.lon,spot.label,spot.mode||'').catch(e=>conditionStatus.textContent=e.message);if(fishingMap)fishingMap.setView([spot.lat,spot.lon],14);});
+      const rename=document.createElement('button');rename.type='button';rename.className='action secondary';rename.textContent='Rename';rename.setAttribute('aria-label','Rename '+spot.label);rename.addEventListener('click',()=>{
+        const next=window.prompt('Enter a name for this fishing location:',spot.label);
+        if(next===null)return;
+        const clean=next.trim();
+        if(!clean){conditionStatus.textContent='Location name cannot be blank.';return;}
+        if(clean.length>60){conditionStatus.textContent='Keep location names to 60 characters or fewer.';return;}
+        spot.label=clean;persistSavedSpots();renderSavedSpots();conditionStatus.textContent='Location renamed to '+clean+'.';
+      });
       const remove=document.createElement('button');remove.type='button';remove.className='action secondary';remove.textContent='Remove';remove.setAttribute('aria-label','Remove '+spot.label);remove.addEventListener('click',()=>{savedFishingSpots.splice(index,1);persistSavedSpots();renderSavedSpots();});
-      actions.append(open,remove);card.append(info,actions);list.append(card);
+      actions.append(open,rename,remove);card.append(info,actions);list.append(card);
     });
   }
   document.getElementById('saveCurrentSpot').addEventListener('click',()=>{
     if(!conditionCoords)return;
-    const label=conditionCoords.label||'Saved fishing spot';
+    const defaultLabel=conditionCoords.label||'Saved fishing spot';
     if(savedFishingSpots.some(x=>Math.abs(x.lat-conditionCoords.lat)<0.00001&&Math.abs(x.lon-conditionCoords.lon)<0.00001))return;
+    const entered=window.prompt('Name this fishing location:',defaultLabel);
+    if(entered===null)return;
+    const label=entered.trim();
+    if(!label){conditionStatus.textContent='Location name cannot be blank.';return;}
+    if(label.length>60){conditionStatus.textContent='Keep location names to 60 characters or fewer.';return;}
     savedFishingSpots.unshift({label,lat:conditionCoords.lat,lon:conditionCoords.lon,mode:fishingMode,savedAt:new Date().toISOString()});
     persistSavedSpots();renderSavedSpots();
     conditionStatus.textContent=label+' saved to your fishing locations.';
