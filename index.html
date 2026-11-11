@@ -346,6 +346,35 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 .app-header p{font-size:.92rem;color:#d6e1e9;margin:0}
 @media(max-width:620px){.brand-copy{padding:2px 0}.brand-kicker{font-size:.62rem}.app-header p{font-size:.82rem}}
 
+
+/* CastPoint home dashboard */
+.home-panel{padding-bottom:8px}
+.home-welcome{position:relative;overflow:hidden;padding:clamp(22px,5vw,34px);border-radius:20px;background:radial-gradient(ellipse at 90% 0%,#2b5872 0%,transparent 48%),linear-gradient(125deg,#0a1b2a,#173d58);border:1px solid #d7a83d;box-shadow:0 14px 32px #10243a20;color:#fff}
+.home-welcome:after{content:"";position:absolute;width:210px;height:210px;border:1px solid #d7a83d30;border-radius:50%;right:-95px;bottom:-135px;box-shadow:0 0 0 18px #d7a83d0b,0 0 0 38px #d7a83d08;pointer-events:none}
+.home-eyebrow{display:block;font-size:.66rem;letter-spacing:.18em;font-weight:850;color:#d9ae4d}
+.home-welcome h2{font-size:clamp(1.65rem,5vw,2.2rem);letter-spacing:-.04em;line-height:1.1;color:#fff;margin:9px 0}
+.home-welcome p{max-width:570px;color:#d9e3eb;margin:0 0 20px;font-size:.94rem}
+.home-primary{display:inline-flex;align-items:center;gap:16px;border:1px solid #f0d58d;border-radius:10px;padding:12px 16px;background:linear-gradient(135deg,#e6c36f,#c28d2b);color:#182635;font:inherit;font-weight:800;box-shadow:0 5px 14px #0003;cursor:pointer}
+.home-primary span{font-size:1.2rem}
+.home-section-heading{display:flex;align-items:end;justify-content:space-between;margin:25px 0 12px}
+.home-section-heading h2{font-size:1.2rem;color:var(--navy);letter-spacing:-.025em;margin:4px 0 0}
+.home-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.home-action-card{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-height:174px;padding:17px;border:1px solid var(--line);border-radius:16px;background:#fff;color:var(--ink);box-shadow:0 5px 16px #10243a0b;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s;font:inherit}
+.home-action-card:hover{transform:translateY(-2px);border-color:#d5ad55;box-shadow:0 10px 22px #10243a14}
+.home-card-feature{border-top:3px solid #d7a83d}
+.home-card-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:#edf2f5;color:#173d58;font-size:1.45rem;font-weight:800;margin-bottom:12px}
+.home-card-title{font-weight:850;font-size:1rem;color:var(--navy)}
+.home-card-copy{font-size:.82rem;line-height:1.45;color:var(--muted);margin:5px 0 14px}
+.home-card-link{font-size:.8rem;font-weight:800;color:#8a641a;margin-top:auto}
+.home-tip{display:flex;gap:14px;align-items:flex-start;padding:17px;margin-top:16px;border:1px solid #e6d5a9;border-radius:16px;background:linear-gradient(120deg,#fffaf0,#fff)}
+.home-tip-mark{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:50%;background:#102b40;color:#e5bd61;font-size:.75rem;font-weight:900;letter-spacing:-.04em}
+.home-tip h3{margin:4px 0;color:var(--navy);font-size:1rem}
+.home-tip p{margin:0 0 9px;color:var(--muted);font-size:.84rem;line-height:1.45}
+.home-text-link{border:0;padding:0;background:none;color:#8a641a;font:inherit;font-size:.82rem;font-weight:850;cursor:pointer}
+.home-footnote{font-size:.74rem;color:var(--muted);margin:14px 2px 0}
+@media(max-width:620px){.home-action-grid{gap:9px}.home-action-card{min-height:166px;padding:13px}.home-card-copy{font-size:.78rem}.home-welcome{padding:22px 18px}}
+@media(max-width:360px){.home-action-grid{grid-template-columns:1fr}.home-action-card{min-height:0}}
+
 </style>
 </head>
 
@@ -366,12 +395,43 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 
 
 <nav class="main-tabs" aria-label="Main sections">
-  <button class="main-tab active" data-panel="conditionsPanel">Fishing Location</button>
-  <button class="main-tab" data-panel="inventoryPanel">Tackle Inventory</button>
-  <button class="main-tab" data-panel="logPanel">Fishing Log</button>
-  <button class="main-tab" data-panel="guidesPanel">Fishing Guides</button>
+  <button class="main-tab active" data-panel="homePanel">Home</button>
+  <button class="main-tab" data-panel="conditionsPanel">Locations</button>
+  <button class="main-tab" data-panel="inventoryPanel">Tackle</button>
+  <button class="main-tab" data-panel="logPanel">Log</button>
+  <button class="main-tab" data-panel="guidesPanel">Guides</button>
   <button class="main-tab" data-panel="helpPanel">Help</button>
 </nav>
+<section id="homePanel" class="panel home-panel">
+  <div class="home-welcome">
+    <div class="home-eyebrow">WELCOME TO YOUR FISHING DESK</div>
+    <h2>Ready for your next cast?</h2>
+    <p>Plan a trip, check the water, keep your gear organized, and record what works.</p>
+    <button class="home-primary" type="button" data-open-panel="conditionsPanel">Plan a fishing trip <span aria-hidden="true">→</span></button>
+  </div>
+  <div class="home-section-heading">
+    <div><span class="home-eyebrow">YOUR TOOLKIT</span><h2>What would you like to do?</h2></div>
+  </div>
+  <div class="home-action-grid">
+    <button class="home-action-card home-card-feature" type="button" data-open-panel="conditionsPanel">
+      <span class="home-card-icon" aria-hidden="true">⌖</span><span class="home-card-title">Fishing locations</span><span class="home-card-copy">Explore the map, weather, tides, and trip conditions.</span><span class="home-card-link">Open locations →</span>
+    </button>
+    <button class="home-action-card" type="button" data-open-panel="inventoryPanel">
+      <span class="home-card-icon" aria-hidden="true">▤</span><span class="home-card-title">Tackle inventory</span><span class="home-card-copy">Keep track of rods, reels, tackle, and supplies.</span><span class="home-card-link">Manage gear →</span>
+    </button>
+    <button class="home-action-card" type="button" data-open-panel="logPanel">
+      <span class="home-card-icon" aria-hidden="true">＋</span><span class="home-card-title">Fishing log</span><span class="home-card-copy">Record catches, photos, locations, and what worked.</span><span class="home-card-link">Record a catch →</span>
+    </button>
+    <button class="home-action-card" type="button" data-open-panel="guidesPanel">
+      <span class="home-card-icon" aria-hidden="true">▣</span><span class="home-card-title">Fishing guides</span><span class="home-card-copy">Find rig setups, lure references, and fishing tips.</span><span class="home-card-link">Browse guides →</span>
+    </button>
+  </div>
+  <section class="home-tip">
+    <div class="home-tip-mark" aria-hidden="true">CP</div>
+    <div><span class="home-eyebrow">A GOOD PLACE TO START</span><h3>Check conditions before you go</h3><p>Choose your fishing spot to review the forecast and, for Gulf Coast trips, available marine and tide information.</p><button type="button" class="home-text-link" data-open-panel="conditionsPanel">Check fishing conditions →</button></div>
+  </section>
+  <p class="home-footnote">Your fishing records and inventory stay in this browser on this device. Export backups regularly from the relevant sections.</p>
+</section>
 <section id="guidesPanel" class="panel" hidden>
 <input
   id="search"
@@ -442,7 +502,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 </div>
 
 </section>
-<section id="conditionsPanel" class="panel">
+<section id="conditionsPanel" class="panel" hidden>
   <h2 style="color:var(--navy);margin:0">Fishing Conditions</h2>
   <p style="color:var(--muted);margin:4px 0 12px">Choose a fishing style to see the conditions that matter for that trip.</p>
   <div class="conditions-location" style="margin:12px 0">
@@ -816,6 +876,12 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     mainTabs.forEach(t => t.classList.toggle('active', t === tab));
     document.querySelectorAll('.panel').forEach(p => p.hidden = p.id !== tab.dataset.panel);
     if(tab.dataset.panel==='conditionsPanel'){initFishingMap();if(fishingMap)setTimeout(()=>fishingMap.invalidateSize(),180);renderBaitHelp();}
+  }));
+  // Home dashboard shortcuts use the same section navigation as the main tabs.
+  document.querySelectorAll('[data-open-panel]').forEach(button => button.addEventListener('click', () => {
+    const target = button.dataset.openPanel;
+    const tab = mainTabs.find(item => item.dataset.panel === target);
+    if(tab) tab.click();
   }));
 
   // Inventory data is seeded once; subsequent edits live in localStorage.
