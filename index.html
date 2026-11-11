@@ -335,6 +335,17 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 .brand-logo{display:block;width:132%;height:132%;max-width:none;object-fit:cover;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:0;border-radius:0;box-shadow:none}
 @media(max-width:620px){.brand-logo-frame{width:68px;height:68px;flex-basis:68px}}
 
+
+/* Text-only CastPoint masthead */
+.app-brand{display:block;max-width:980px}
+.brand-copy{max-width:680px;padding:4px 0}
+.app-header h1{font-size:clamp(2.35rem,8vw,3.25rem);font-weight:850;letter-spacing:-.055em;line-height:1.02}
+.app-header h1 .brand-gold{color:#e4b64e}
+.brand-kicker{font-size:.68rem;letter-spacing:.24em;font-weight:850;color:#e4bd63;margin-bottom:8px}
+.brand-rule{width:104px;height:3px;margin:12px 0 10px;border-radius:4px;background:linear-gradient(90deg,#f1ce77,#bd8724 72%,transparent)}
+.app-header p{font-size:.92rem;color:#d6e1e9;margin:0}
+@media(max-width:620px){.brand-copy{padding:2px 0}.brand-kicker{font-size:.62rem}.app-header p{font-size:.82rem}}
+
 </style>
 </head>
 
@@ -342,10 +353,10 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 
 <header class="app-header">
   <div class="wrap app-brand">
-    <span class="brand-logo-frame"><img src="icon.png" alt="CastPoint logo" class="brand-logo"></span>
     <div class="brand-copy">
       <div class="brand-kicker">YOUR FISHING COMPANION</div>
-      <h1>CastPoint</h1>
+      <h1><span>Cast</span><span class="brand-gold">Point</span></h1>
+      <div class="brand-rule" aria-hidden="true"></div>
       <p>Find your water. Plan your trip. Make every cast count.</p>
     </div>
   </div>
