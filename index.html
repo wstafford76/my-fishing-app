@@ -1519,7 +1519,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   async function loadConditions(lat,lon,label,modeHint='') {
     conditionCoords={lat,lon,label};
     renderSavedSpots();
-    const detectedMode=await detectFishingMode(lat,lon,label,modeHint);
+    const detectedMode=await Promise.race([detectFishingMode(lat,lon,label,modeHint),new Promise(resolve=>setTimeout(()=>resolve(null),5000))]);
     if(detectedMode){
       setFishingMode(detectedMode);
       conditionStatus.textContent='Location identified as '+(detectedMode==='surf'?'saltwater / coastal':'freshwater')+'. Loading conditions…';
