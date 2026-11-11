@@ -549,19 +549,19 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 
   <div class="log-form">
     <h3 style="color:var(--navy);margin:0 0 8px">Export Data</h3>
-    <p class="small-note">Choose the type of information to export. Fishing-log exports include catches, Trip Conditions Timeline readings, and catch photos. Inventory exports contain tackle records and are separate from full CastPoint backups.</p>
+    <p class="small-note">Choose the type of information to export. Fishing-log exports include catches, Trip Conditions Timeline readings, and catch photos. Inventory exports contain tackle records. A complete backup includes all supported CastPoint records and photos.</p>
     <div class="inventory-actions">
       <button class="action secondary" id="exportLog" type="button">Export fishing log</button>
-      <button class="action secondary" id="exportInventory" type="button">Export inventory</button>
+      <button class="action secondary" id="exportInventory" type="button">Export Inventory Data</button>
     </div>
     <p id="logImportStatus" class="small-note" role="status"></p>
   </div>
 
   <div class="log-form">
-    <h3 style="color:var(--navy);margin:0 0 8px">Create Backup</h3>
+    <h3 style="color:var(--navy);margin:0 0 8px">Create Complete Backup</h3>
     <p class="small-note">Create one portable file containing your CastPoint records and photos. Keep a copy somewhere outside this device, such as your computer, external drive, or cloud storage.</p>
     <div class="inventory-actions">
-      <button class="action" id="createFullBackup" type="button">Create full backup</button>
+      <button class="action" id="createFullBackup" type="button">Create Complete Backup</button>
     </div>
     <p id="fullBackupStatus" class="small-note" role="status">A full backup includes inventory, gear photos, catches, catch photos, trip condition snapshots, saved fishing locations, and your current freshwater/surf selection.</p>
   </div>
@@ -587,7 +587,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     </details>
     <details><summary><strong>Transfer CastPoint to another device</strong></summary>
       <ol class="small-note">
-        <li>On the device with your data, open Data Management and select <strong>Create full backup</strong>.</li>
+        <li>On the device with your data, open Data Management and select <strong>Create Complete Backup</strong>.</li>
         <li>Save <strong>castpoint-full-backup.json</strong> somewhere safe outside the device.</li>
         <li>Transfer that file to the destination phone or computer.</li>
         <li>Open CastPoint on the destination device, go to Data Management, and select <strong>Restore full backup</strong>.</li>
