@@ -334,8 +334,10 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
  .brand-kicker{font-size:.58rem}
  .app-header p{font-size:.78rem}
  main.wrap{padding:16px 13px 100px}
- .main-tabs{position:fixed;top:auto;bottom:calc(8px + env(safe-area-inset-bottom));left:10px;right:10px;margin:0;padding:7px;gap:3px;border-radius:16px;box-shadow:0 8px 28px #06132155;background:#091a29f5;overflow:visible}
- .main-tab{flex:1 1 20%;min-width:0;padding:10px 2px;font-size:.68rem;line-height:1.2;white-space:normal;text-align:center;border-radius:10px}
+ .main-tabs{position:fixed;top:auto;bottom:calc(8px + env(safe-area-inset-bottom));left:10px;right:10px;margin:0;padding:7px;gap:4px;border-radius:16px;box-shadow:0 8px 28px #06132155;background:#091a29f5;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;justify-content:flex-start;align-items:stretch;min-height:58px;max-height:72px;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+ .main-tabs::-webkit-scrollbar{display:none}
+ .main-tab{flex:0 0 auto;width:auto;min-width:66px;max-width:none;padding:10px 9px;font-size:.72rem;line-height:1.15;white-space:nowrap;text-align:center;border-radius:10px}
+ .main-tab[data-panel="dataManagementPanel"]{min-width:112px}
  .panel{scroll-margin-top:12px}
 }
 @media(min-width:621px){.main-tabs{top:0}}
