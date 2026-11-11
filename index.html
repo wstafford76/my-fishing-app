@@ -413,6 +413,15 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 #itemForm small{display:block;margin-top:5px}
 @media(max-width:480px){.inventory-item{flex-direction:column}.inventory-item .item-buttons{width:100%}.inventory-item .item-buttons button{flex:1}}
 
+
+/* Guide quick-find navigation */
+.guide-quickfind{margin:-4px 0 16px;padding:13px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 4px 14px #10243a0a}
+.guide-quickfind-label{display:block;margin-bottom:9px;color:#8a681e;font-size:.68rem;font-weight:850;letter-spacing:.14em}
+.guide-quickfind-chips{display:flex;gap:7px;flex-wrap:wrap}
+.guide-chip{border:1px solid #d9e1e7;background:#f5f7f9;color:#18364d;border-radius:999px;padding:8px 12px;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer}
+.guide-chip:hover{border-color:#c79a3d;background:#fff8e8}
+.guide-chip.active{background:#173a55;color:#fff;border-color:#d7a83d;box-shadow:0 0 0 1px #d7a83d}
+.guide-result-count{margin:9px 0 0;color:var(--muted);font-size:.8rem}
 </style>
 </head>
 
@@ -485,6 +494,19 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
   <button class="filter" data-filter="saltwater">Saltwater</button>
   <button class="filter" data-filter="lures">Lures</button>
 </nav>
+
+<div class="guide-quickfind" role="group" aria-label="Quick find by species or technique">
+  <span class="guide-quickfind-label">QUICK FIND</span>
+  <div class="guide-quickfind-chips">
+    <button type="button" class="guide-chip" data-quick-find="bass">Bass</button>
+    <button type="button" class="guide-chip" data-quick-find="speckled trout">Speckled trout</button>
+    <button type="button" class="guide-chip" data-quick-find="redfish">Redfish</button>
+    <button type="button" class="guide-chip" data-quick-find="drum">Black / bull drum</button>
+    <button type="button" class="guide-chip" data-quick-find="surf fishing">Surf fishing</button>
+    <button type="button" class="guide-chip" data-quick-find="rig">Rigs</button>
+  </div>
+  <p id="guideResultCount" class="guide-result-count" aria-live="polite">Showing all guides</p>
+</div>
 
 <section id="guides" class="grid" aria-live="polite">
 
@@ -847,10 +869,13 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 
   const searchBox = document.getElementById('search');
   const buttons = Array.from(document.querySelectorAll('.filter'));
+  const quickFindButtons = Array.from(document.querySelectorAll('.guide-chip'));
+  const resultCount = document.getElementById('guideResultCount');
   const cards = Array.from(document.querySelectorAll('#guides .card'));
   const guideList = document.getElementById('guides');
 
   let selectedCategory = 'all';
+  let selectedQuickFind = '';
 
   function updateGuides() {
 
@@ -873,14 +898,22 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       const searchMatches =
         query === '' ||
         searchableText.includes(query);
+      const quickFindMatches =
+        selectedQuickFind === '' ||
+        searchableText.includes(selectedQuickFind);
 
-      const showCard = categoryMatches && searchMatches;
+      const showCard = categoryMatches && searchMatches && quickFindMatches;
 
       card.hidden = !showCard;
 
       if (showCard) visibleCount++;
 
     });
+
+    if(resultCount){
+      const total=cards.length;
+      resultCount.textContent=visibleCount===total?'Showing all '+total+' guides':'Showing '+visibleCount+' of '+total+' guides';
+    }
 
     let emptyMessage = guideList.querySelector('.empty');
 
@@ -901,6 +934,15 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 
   searchBox.addEventListener('input', updateGuides);
   searchBox.addEventListener('search', updateGuides);
+
+  quickFindButtons.forEach(button=>{
+    button.addEventListener('click',()=>{
+      const value=button.dataset.quickFind||'';
+      selectedQuickFind=selectedQuickFind===value?'':value;
+      quickFindButtons.forEach(item=>item.classList.toggle('active',item.dataset.quickFind===selectedQuickFind));
+      updateGuides();
+    });
+  });
 
   buttons.forEach(button => {
 
