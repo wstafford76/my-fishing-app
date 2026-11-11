@@ -421,7 +421,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 .guide-chip{border:1px solid #d9e1e7;background:#f5f7f9;color:#18364d;border-radius:999px;padding:8px 12px;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer}
 .guide-chip:hover{border-color:#c79a3d;background:#fff8e8}
 .guide-chip.active{background:#173a55;color:#fff;border-color:#d7a83d;box-shadow:0 0 0 1px #d7a83d}
-.guide-result-count{margin:9px 0 0;color:var(--muted);font-size:.8rem}
+.guide-result-count{margin:9px 0 0;color:var(--muted);font-size:.8rem}\n.guide-quickfind-hint{margin:10px 0 0;color:var(--muted);font-size:.78rem}
 </style>
 </head>
 
@@ -495,16 +495,27 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
   <button class="filter" data-filter="lures">Lures</button>
 </nav>
 
-<div class="guide-quickfind" role="group" aria-label="Quick find by species or technique">
-  <span class="guide-quickfind-label">QUICK FIND</span>
+<div class="guide-quickfind" role="group" aria-label="Quick find by fishing type, species, or technique">
+  <span class="guide-quickfind-label">QUICK FIND · COMMON STARTING POINTS</span>
   <div class="guide-quickfind-chips">
-    <button type="button" class="guide-chip" data-quick-find="bass">Bass</button>
-    <button type="button" class="guide-chip" data-quick-find="speckled trout">Speckled trout</button>
-    <button type="button" class="guide-chip" data-quick-find="redfish">Redfish</button>
-    <button type="button" class="guide-chip" data-quick-find="drum">Black / bull drum</button>
+    <button type="button" class="guide-chip" data-quick-find="freshwater">Freshwater</button>
+    <button type="button" class="guide-chip" data-quick-find="saltwater">Saltwater</button>
     <button type="button" class="guide-chip" data-quick-find="surf fishing">Surf fishing</button>
+    <button type="button" class="guide-chip" data-quick-find="inshore">Inshore</button>
+    <button type="button" class="guide-chip" data-quick-find="bass">Bass</button>
+    <button type="button" class="guide-chip" data-quick-find="trout">Trout</button>
+    <button type="button" class="guide-chip" data-quick-find="redfish">Redfish</button>
+    <button type="button" class="guide-chip" data-quick-find="flounder">Flounder</button>
+    <button type="button" class="guide-chip" data-quick-find="drum">Drum</button>
+    <button type="button" class="guide-chip" data-quick-find="sheepshead">Sheepshead</button>
+    <button type="button" class="guide-chip" data-quick-find="pompano">Pompano</button>
+    <button type="button" class="guide-chip" data-quick-find="whiting">Whiting</button>
+    <button type="button" class="guide-chip" data-quick-find="catfish">Catfish</button>
+    <button type="button" class="guide-chip" data-quick-find="crappie">Crappie</button>
     <button type="button" class="guide-chip" data-quick-find="rig">Rigs</button>
+    <button type="button" class="guide-chip" data-quick-find="lure">Lures</button>
   </div>
+  <p class="guide-quickfind-hint">These are shortcuts, not a species limit. Search above for any fish, bait, rig, or technique.</p>
   <p id="guideResultCount" class="guide-result-count" aria-live="polite">Showing all guides</p>
 </div>
 
@@ -512,7 +523,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 
 <article class="card"
 data-category="freshwater"
-data-search="freshwater bass largemouth smallmouth carolina rig fishing bait soft plastic worms creature baits hooks weights sinkers bullet weight leader knots fishing line tackle bank fishing pond fishing texas rig wacky rig frog topwater">
+data-search="freshwater bass largemouth smallmouth catfish channel catfish blue catfish flathead catfish crappie white crappie black crappie sunfish bluegill redear gar carp carolina rig fishing bait soft plastic worms creature baits hooks weights sinkers bullet weight leader knots fishing line tackle bank fishing pond fishing texas rig wacky rig frog topwater">
   <span class="tag">FRESHWATER</span>
   <h2>Freshwater Carolina Rig</h2>
   <p>Approved setup guide with recommended knots for freshwater fishing.</p>
@@ -521,7 +532,7 @@ data-search="freshwater bass largemouth smallmouth carolina rig fishing bait sof
 
 <article class="card"
 data-category="saltwater"
-data-search="saltwater gulf coast carolina rig speckled trout spotted seatrout redfish red drum flounder bait live bait dead bait shrimp mullet croaker fish hooks sinkers weights leader fishing line tackle surf inshore">
+data-search="saltwater gulf coast inshore surf fishing beach fishing speckled trout spotted seatrout redfish red drum flounder sheepshead pompano whiting gulf kingfish spanish mackerel bluefish snapper grouper bait live bait dead bait shrimp mullet croaker fish hooks sinkers weights leader fishing line tackle">
   <span class="tag">SALTWATER</span>
   <h2>Saltwater Carolina Rig — Gulf Coast</h2>
   <p>Gulf Coast Carolina rig reference for inshore saltwater fishing.</p>
@@ -530,7 +541,7 @@ data-search="saltwater gulf coast carolina rig speckled trout spotted seatrout r
 
 <article class="card"
 data-category="saltwater"
-data-search="bull drum black drum red drum fish finder rig surf fishing beach fishing bait cut bait mullet shrimp crab circle hooks pyramid sinkers weights leader fishing line tackle big drum">
+data-search="bull drum black drum red drum sheepshead pompano whiting surf fishing beach fishing fish finder rig bait cut bait mullet shrimp crab circle hooks pyramid sinkers weights leader fishing line tackle big drum">
   <span class="tag">SALTWATER</span>
   <h2>Bull Drum Fish Finder Rig</h2>
   <p>Approved fish-finder rig reference for targeting bull drum.</p>
@@ -539,7 +550,7 @@ data-search="bull drum black drum red drum fish finder rig surf fishing beach fi
 
 <article class="card"
 data-category="saltwater"
-data-search="saltwater artificial bait lures soft plastics paddle tails shrimp imitation jerk shad flukes jig heads speckled trout redfish flounder fishing hooks retrieve artificial shrimp plastic bait fishing tackle">
+data-search="saltwater inshore artificial bait lures soft plastics paddle tails shrimp imitation jerk shad flukes jig heads speckled trout redfish flounder sheepshead spanish mackerel fishing hooks retrieve artificial shrimp plastic bait fishing tackle">
   <span class="tag">SALTWATER</span>
   <h2>Saltwater Artificial Soft Plastics</h2>
   <p>Approved soft-plastic rig and lure reference for Gulf Coast species.</p>
