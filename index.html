@@ -1578,15 +1578,15 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   function classifyFishingLocationText(value){
     const text=String(value||'').toLowerCase();
     const has=words=>words.some(word=>new RegExp('(^|[^a-z])'+word+'([^a-z]|$)','i').test(text));
-    // Recognized coastal communities should select saltwater mode even when reverse geocoding returns a city or neighborhood instead of a water feature.
-    if(has(['galveston','galveston island','freeport texas','freeport tx','surfside beach','surfside','quintana','san luis pass','bolivar peninsula','port bolivar','crystal beach','jamaica beach','kemah','seabrook','texas city','baytown','la porte','shoreacres','san leon','dickinson bay','tiki island']))return 'surf';
+    // Use globally applicable water-feature terms rather than a regional city-name list.
     if(has(['san luis pass','pass','beach','ocean','gulf','surf','inlet','jetty','pier','estuary','tidal','saltwater','salt water','bay','harbor','harbour','ship channel','coast','coastal','seaside','sound','lagoon','marina']))return 'surf';
     if(has(['lake','pond','reservoir','creek','river','stream','bayou','freshwater','fresh water','fishing pond','canal']))return 'freshwater';
     return null;
   }
   async function detectModeFromNearbyCoast(lat,lon){
     // Keep optional coastline detection from delaying the main conditions request.
-    const query='[out:json][timeout:5];(way(around:40000,'+lat+','+lon+')["natural"="coastline"];node(around:40000,'+lat+','+lon+')["place"~"^(sea|ocean)$"];way(around:40000,'+lat+','+lon+')["natural"~"^(bay|strait)$"];);out tags 1;';
+    // Mapped coastlines and marine features within 12 km support coastal detection nationwide.
+    const query='[out:json][timeout:5];(way(around:12000,'+lat+','+lon+')["natural"="coastline"];relation(around:12000,'+lat+','+lon+')["natural"="coastline"];node(around:12000,'+lat+','+lon+')["place"~"^(sea|ocean)$"];way(around:12000,'+lat+','+lon+')["natural"~"^(bay|strait)$"];way(around:12000,'+lat+','+lon+')["water"~"^(sea|ocean|bay|strait)$"];);out tags 1;';
     const endpoints=['https://overpass-api.de/api/interpreter?data=','https://overpass.kumi.systems/api/interpreter?data='];
     for(const endpoint of endpoints){try{const response=await fetchWithTimeout(endpoint+encodeURIComponent(query),{},3500);if(!response.ok)continue;const data=await response.json();if(data.elements&&data.elements.length)return 'surf';}catch(e){}}
     return null;
