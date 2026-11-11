@@ -801,13 +801,33 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <article class="stat"><strong id="seaDirection">—</strong><span>Wave direction</span></article>
       <article class="stat"><strong id="seaTemp">—</strong><span>Sea temperature</span></article>
     </div>
-    <h3 style="color:var(--navy);margin:20px 0 8px">Gulf Coast weather satellite · NOAA GOES-East</h3>
-    <p class="small-note">Live animated GeoColor imagery focused on the Gulf of Mexico, including the Texas coast. NOAA updates this loop about every 5 minutes.</p>
-    <div style="background:#eef2f6;border:1px solid var(--line);border-radius:12px;padding:8px">
-      <iframe title="NOAA GOES-19 animated Gulf Coast satellite imagery" src="https://www.star.nesdis.noaa.gov/goes/sector_band.php?band=GEOCOLOR&length=12&sat=G19&sector=ga" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" style="display:block;width:100%;height:560px;border:0;border-radius:8px;background:#fff"></iframe>
-      <p class="small-note" style="text-align:center;margin:8px 0 4px">Source: NOAA / NESDIS / STAR · GOES-19 GeoColor</p>
-      <p style="text-align:center;margin:4px 0"><a href="https://www.star.nesdis.noaa.gov/goes/sector_band.php?band=GEOCOLOR&length=12&sat=G19&sector=ga" target="_blank" rel="noopener">Open NOAA satellite viewer full screen</a></p>
-    </div>
+    <section class="castpoint-weather-imagery" aria-label="CastPoint satellite and weather radar">
+      <h3 style="color:var(--navy);margin:20px 0 8px">Satellite &amp; weather radar</h3>
+      <p class="small-note">Animated NOAA GOES-East imagery and precipitation radar for the selected coastal region.</p>
+      <div class="conditions-location" role="group" aria-label="Satellite imagery type" style="margin:10px 0">
+        <button class="action" id="cpSatGeo" type="button" aria-pressed="true">GeoColor</button>
+        <button class="action secondary" id="cpSatVisible" type="button" aria-pressed="false">Visible</button>
+        <button class="action secondary" id="cpSatInfrared" type="button" aria-pressed="false">Infrared</button>
+        <button class="action secondary" id="cpSatWaterVapor" type="button" aria-pressed="false">Water vapor</button>
+      </div>
+      <label for="cpSatRegion" style="display:block;font-weight:600;color:var(--navy);margin:8px 0 5px">Satellite region</label>
+      <select id="cpSatRegion" style="width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy)">
+        <option value="sp">Gulf Coast &amp; Southern Plains</option>
+        <option value="se">Eastern Gulf &amp; Southeast</option>
+        <option value="conus">Continental United States</option>
+      </select>
+      <div style="background:#eef2f6;border:1px solid var(--line);border-radius:12px;padding:8px;margin-top:10px">
+        <iframe id="cpSatelliteFrame" title="Animated NOAA GOES-East satellite imagery" src="https://www.star.nesdis.noaa.gov/GOES/sector_band.php?sat=G19&amp;band=GEOCOLOR&amp;length=12&amp;sector=sp" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" style="display:block;width:100%;height:390px;border:0;border-radius:8px;background:#fff"></iframe>
+        <p id="cpSatelliteCaption" class="small-note" style="text-align:center;margin:8px 0 4px">NOAA / NESDIS / STAR · GOES-19 GeoColor · Animated loop</p>
+        <p style="text-align:center;margin:4px 0"><a id="cpSatelliteOpen" href="https://www.star.nesdis.noaa.gov/GOES/sector_band.php?sat=G19&amp;band=GEOCOLOR&amp;length=12&amp;sector=sp" target="_blank" rel="noopener">Open satellite loop full screen</a></p>
+      </div>
+      <h4 style="color:var(--navy);margin:18px 0 6px">Precipitation radar</h4>
+      <p class="small-note">Interactive radar centered on the selected fishing location. Pan and zoom to follow rain and storms.</p>
+      <div style="border:1px solid var(--line);border-radius:12px;overflow:hidden">
+        <iframe id="cpCoastalRadar" title="Interactive precipitation radar for selected location" loading="lazy" style="display:block;width:100%;height:390px;border:0" src="about:blank"></iframe>
+      </div>
+      <p class="small-note">Satellite imagery is updated by NOAA approximately every 5 minutes. Visible imagery is daylight-dependent; infrared and water-vapor imagery are available day and night. Radar coverage and update timing vary by location.</p>
+    </section>
     <p class="small-note">Weather and marine conditions are estimates for the selected coordinates. Tide predictions come from the nearest available NOAA station and may not represent conditions at your exact shoreline.</p>
     </div>
   </div>
@@ -1455,6 +1475,33 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   document.getElementById('freshwaterMode').addEventListener('click',()=>setFishingMode('freshwater'));
   document.getElementById('surfMode').addEventListener('click',()=>setFishingMode('surf'));
   setFishingMode('freshwater');
+  // CP-022: purpose-built satellite and radar controls for anglers.
+  let cpSatelliteBand='GEOCOLOR';
+  function renderCastPointImagery(){
+    const region=document.getElementById('cpSatRegion')?.value||'sp';
+    const frame=document.getElementById('cpSatelliteFrame');
+    if(!frame)return;
+    const url='https://www.star.nesdis.noaa.gov/GOES/sector_band.php?sat=G19&band='+encodeURIComponent(cpSatelliteBand)+'&length=12&sector='+encodeURIComponent(region);
+    frame.src=url;
+    const open=document.getElementById('cpSatelliteOpen');if(open)open.href=url;
+    const labels={GEOCOLOR:'GeoColor', '02':'Visible · Band 2', '13':'Infrared · Band 13', '08':'Water vapor · Band 8'};
+    const caption=document.getElementById('cpSatelliteCaption');
+    if(caption)caption.textContent='NOAA / NESDIS / STAR · GOES-19 '+labels[cpSatelliteBand]+' · Animated loop';
+    [['cpSatGeo','GEOCOLOR'],['cpSatVisible','02'],['cpSatInfrared','13'],['cpSatWaterVapor','08']].forEach(([id,band])=>{
+      const button=document.getElementById(id);if(!button)return;
+      const active=cpSatelliteBand===band;button.className='action'+(active?'':' secondary');button.setAttribute('aria-pressed',String(active));
+    });
+  }
+  [['cpSatGeo','GEOCOLOR'],['cpSatVisible','02'],['cpSatInfrared','13'],['cpSatWaterVapor','08']].forEach(([id,band])=>{
+    document.getElementById(id)?.addEventListener('click',()=>{cpSatelliteBand=band;renderCastPointImagery();});
+  });
+  document.getElementById('cpSatRegion')?.addEventListener('change',renderCastPointImagery);
+  function updateCastPointRadar(lat,lon){
+    const radar=document.getElementById('cpCoastalRadar');if(!radar)return;
+    const url='https://embed.windy.com/embed2.html?lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&detailLat='+encodeURIComponent(lat)+'&detailLon='+encodeURIComponent(lon)+'&width=650&height=450&zoom=6&level=surface&overlay=radar&product=radar&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates';
+    radar.src=url;
+  }
+  renderCastPointImagery();
   const setCondition = (id,value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
   const fmt = (v,unit,digits=0) => Number.isFinite(v) ? Number(v).toFixed(digits)+unit : '—';
   const compass = v => Number.isFinite(v) ? ['N','NE','E','SE','S','SW','W','NW'][Math.round((((v%360)+360)%360)/45)%8]+' ('+Math.round(v)+'°)' : '—';
@@ -1623,6 +1670,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   }
   async function loadConditions(lat,lon,label,modeHint='') {
     conditionCoords={lat,lon,label};
+    updateCastPointRadar(lat,lon);
     renderSavedSpots();
     const detectedMode=await Promise.race([detectFishingMode(lat,lon,label,modeHint),new Promise(resolve=>setTimeout(()=>resolve(null),12000))]);
     if(detectedMode){
