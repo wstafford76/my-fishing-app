@@ -1983,7 +1983,14 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     const age=((date.getTime()-NEW_MOON_EPOCH)/86400000%SYNODIC_MONTH+SYNODIC_MONTH)%SYNODIC_MONTH;
     const fraction=age/SYNODIC_MONTH,illumination=(1-Math.cos(2*Math.PI*fraction))/2*100;
     const phases=[['New Moon',0],['Waxing Crescent',0.125],['First Quarter',0.25],['Waxing Gibbous',0.375],['Full Moon',0.5],['Waning Gibbous',0.625],['Last Quarter',0.75],['Waning Crescent',0.875]];
-    const phase=phases.reduce((best,item)=>Math.abs(item[1]-fraction)<Math.abs(best[1]-fraction)?item:best,phases[0])[0];
+    const phase=fraction<0.03||fraction>=0.97?'New Moon':
+      fraction<0.22?'Waxing Crescent':
+      fraction<0.28?'First Quarter':
+      fraction<0.47?'Waxing Gibbous':
+      fraction<0.53?'Full Moon':
+      fraction<0.72?'Waning Gibbous':
+      fraction<0.78?'Last Quarter':
+      fraction<0.97?'Waning Crescent':'New Moon';
     function nextPhase(target){
       let days=(target-age+SYNODIC_MONTH)%SYNODIC_MONTH;
       if(days<0.02)days=SYNODIC_MONTH;
@@ -1996,7 +2003,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     return {age,phase,illumination,newMoon,fullMoon,spring,neap,score:spring?1:0,description:spring?'Near a new or full moon: spring-tide range is commonly stronger.':neap?'Near a quarter moon: neap-tide range is commonly smaller.':'Between spring and neap periods.'};
   }
   function moonGraphicMarkup(m,size,id){
-    const r=size*.39,c=size/2,illum=m.illumination/100,waxing=m.age<SYNODIC_MONTH/2,term=Math.max(.01,Math.abs(Math.cos(2*Math.PI*m.age/SYNODIC_MONTH))*r);
+    const r=size*.39,c=size/2,illum=m.illumination/100,waxing=m.age<SYNODIC_MONTH/2,term=Math.min(r*.94,Math.max(.01,Math.abs(Math.cos(2*Math.PI*m.age/SYNODIC_MONTH))*r));
     let lit='';
     if(illum>.995)lit='<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="url(#'+id+'-lit)"/>';
     else if(illum>.005)lit=waxing
