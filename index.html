@@ -1294,6 +1294,16 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       },()=>refine(),{enableHighAccuracy:false,timeout:5000,maximumAge:120000});
     });
   }
+  async function fetchWithTimeout(url,options={},timeoutMs=12000){
+    const controller=typeof AbortController!=='undefined'?new AbortController():null;
+    let timer=null;
+    try{
+      const requestOptions={...options};
+      if(controller)requestOptions.signal=controller.signal;
+      const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{if(controller)controller.abort();reject(new Error('Request timed out after '+Math.round(timeoutMs/1000)+' seconds.'));},timeoutMs);});
+      return await Promise.race([fetch(url,requestOptions),timeout]);
+    }finally{if(timer)clearTimeout(timer);}
+  }
   function gpsErrorMessage(error){
     if(error?.code===1)return 'Location permission was denied. Allow location access in your browser or device settings, then try again.';
     if(error?.code===2)return 'Your location is unavailable. Check that device location services are enabled, then try again.';
@@ -1486,10 +1496,10 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     return null;
   }
   async function detectModeFromNearbyCoast(lat,lon){
-    // Check mapped coastline around city-center results; try a secondary Overpass instance if needed.
-    const query='[out:json][timeout:18];(way(around:40000,'+lat+','+lon+')["natural"="coastline"];node(around:40000,'+lat+','+lon+')["place"~"^(sea|ocean)$"];way(around:40000,'+lat+','+lon+')["natural"~"^(bay|strait)$"];);out tags 1;';
+    // Keep optional coastline detection from delaying the main conditions request.
+    const query='[out:json][timeout:5];(way(around:40000,'+lat+','+lon+')["natural"="coastline"];node(around:40000,'+lat+','+lon+')["place"~"^(sea|ocean)$"];way(around:40000,'+lat+','+lon+')["natural"~"^(bay|strait)$"];);out tags 1;';
     const endpoints=['https://overpass-api.de/api/interpreter?data=','https://overpass.kumi.systems/api/interpreter?data='];
-    for(const endpoint of endpoints){try{const response=await fetch(endpoint+encodeURIComponent(query));if(!response.ok)continue;const data=await response.json();if(data.elements&&data.elements.length)return 'surf';return null;}catch(e){}}
+    for(const endpoint of endpoints){try{const response=await fetchWithTimeout(endpoint+encodeURIComponent(query),{},3500);if(!response.ok)continue;const data=await response.json();if(data.elements&&data.elements.length)return 'surf';}catch(e){}}
     return null;
   }
   async function detectFishingMode(lat,lon,label,hint){
@@ -1498,7 +1508,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     const coastal=await detectModeFromNearbyCoast(lat,lon);if(coastal)return coastal;
     try{
       const url='https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&zoom=18&addressdetails=1';
-      const response=await fetch(url,{headers:{'Accept':'application/json'}});
+      const response=await fetchWithTimeout(url,{headers:{'Accept':'application/json'}},4000);
       if(response.ok){const place=await response.json(),a=place.address||{},feature=[place.category,place.type,place.addresstype,place.name,a.natural,a.water,a.waterway,a.leisure,a.amenity,a.landuse].filter(Boolean).join(' ').toLowerCase();
         if(/\\b(beach|sea|ocean|gulf|bay|strait|estuary|harbour|harbor|inlet|coast|tidal|salt|pier|jetty|marina|channel)\\b/.test(feature))return 'surf';
         if(/\\b(lake|pond|reservoir|river|stream|creek|canal|waterfall|bayou)\\b/.test(feature))return 'freshwater';
@@ -1523,7 +1533,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     setCondition('conditionLocationName',label+' · '+lat.toFixed(3)+', '+lon.toFixed(3));
     const weatherUrl='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,wind_gusts_10m,wind_direction_10m,surface_pressure,pressure_msl&hourly=temperature_2m,precipitation_probability,wind_speed_10m,wind_gusts_10m,pressure_msl,weather_code&daily=sunrise,sunset&past_days=1&forecast_days=2&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto';
     const marineUrl='https://marine-api.open-meteo.com/v1/marine?latitude='+lat+'&longitude='+lon+'&current=wave_height,wave_period,wave_direction,sea_surface_temperature&length_unit=imperial&temperature_unit=fahrenheit&timezone=auto';
-    const results=await Promise.allSettled([fetch(weatherUrl).then(r=>{if(!r.ok)throw Error('Weather service unavailable');return r.json()}),fetch(marineUrl).then(r=>{if(!r.ok)throw Error('Marine service unavailable');return r.json()})]);
+    const results=await Promise.allSettled([fetchWithTimeout(weatherUrl,{},12000).then(r=>{if(!r.ok)throw Error('Weather service unavailable (HTTP '+r.status+')');return r.json()}),fetchWithTimeout(marineUrl,{},9000).then(r=>{if(!r.ok)throw Error('Marine service unavailable (HTTP '+r.status+')');return r.json()})]);
     if(results[0].status==='fulfilled'){
       const c=results[0].value.current||{};
       setCondition('wxTemp',fmt(c.temperature_2m,'°F'));setCondition('wxFeels',fmt(c.apparent_temperature,'°F'));
@@ -1573,14 +1583,14 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       }else{chart.innerHTML='';setCondition('dashboardPressureNote','Not enough hourly pressure readings to draw a trend yet.');}
       document.getElementById('freshwaterRadar').src='https://embed.windy.com/embed2.html?lat='+lat+'&lon='+lon+'&detailLat='+lat+'&detailLon='+lon+'&width=650&height=420&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&metricWind=mph&metricTemp=%C2%B0F';
       document.getElementById('usgsWaterLink').href='https://waterdata.usgs.gov/nwis/rt?search_site_no=&search_site_type=lake,reservoir,stream&search_state=TX&search_station_nm=';
-    } else {conditionStatus.textContent='Weather could not be loaded. '+results[0].reason.message;}
+    } else {conditionStatus.textContent='Weather could not be loaded. '+(results[0].reason?.message||'The weather service did not respond.')+' Check your connection and retry.';}
     if(results[1].status==='fulfilled'){
       const c=results[1].value.current||{};
       setCondition('seaWave',fmt(c.wave_height,' ft',1));setCondition('seaPeriod',fmt(c.wave_period,' sec',1));
       setCondition('seaDirection',fmt(c.wave_direction,'°'));setCondition('seaTemp',fmt(c.sea_surface_temperature,'°F'));
       if(lastConditionSnapshot){lastConditionSnapshot.waveHeightFt=c.wave_height??null;lastConditionSnapshot.wavePeriodSec=c.wave_period??null;lastConditionSnapshot.waveDirectionDegrees=c.wave_direction??null;lastConditionSnapshot.seaTemperatureF=c.sea_surface_temperature??null;}
     } else {['seaWave','seaPeriod','seaDirection','seaTemp'].forEach(id=>setCondition(id,'Unavailable'));}
-    conditionStatus.textContent='Updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.';
+    if(results[0].status==='fulfilled')conditionStatus.textContent='Weather updated '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})+'.'+(results[1].status==='rejected'?' Marine conditions are unavailable; weather loaded successfully.':'');
     renderBaitHelp();
     if(fishingMode==='surf'){
       loadPlainEnglishTideCurrent(lat,lon,label).catch(e=>setPlainReportError(e.message));
