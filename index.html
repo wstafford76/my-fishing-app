@@ -431,6 +431,16 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 
 
 /* CP-012 follow-up: full-viewport responsive app layout */
+
+/* CP-012 horizontal full-bleed correction */
+html,body{box-sizing:border-box;width:100%!important;max-width:none!important;margin:0!important;padding:0}
+*,*::before,*::after{box-sizing:border-box}
+body{position:relative;left:0;right:0;min-width:0;overflow-x:hidden}
+.app-header{display:block;position:relative;left:0;width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
+.app-header-art{width:100%!important;max-width:none!important}
+main.wrap{width:100%!important;max-width:none!important;margin-left:0!important;margin-right:0!important}
+@media(max-width:900px){main.wrap{padding-left:12px;padding-right:12px}}
+
 html,body{width:100%;min-height:100%;margin:0}
 body{min-height:100vh;min-height:100svh;overflow-x:hidden}
 .app-header{width:100%;padding:0!important;margin:0}
