@@ -431,41 +431,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 
 
 
-/* Keep the root layout width synchronized with iOS Chrome's visual viewport after rotation. */
-(function(){
-  function syncLandscapeViewport(){
-    const root=document.documentElement;
-    const body=document.body;
-    const isCompactLandscape=window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
-    if(!isCompactLandscape){
-      root.style.removeProperty('width');
-      root.style.removeProperty('max-width');
-      body.style.removeProperty('width');
-      body.style.removeProperty('max-width');
-      return;
-    }
-    const width=window.visualViewport ? window.visualViewport.width : window.innerWidth;
-    if(!Number.isFinite(width) || width<=0) return;
-    const value=width+'px';
-    root.style.setProperty('width',value,'important');
-    root.style.setProperty('max-width',value,'important');
-    body.style.setProperty('width',value,'important');
-    body.style.setProperty('max-width',value,'important');
-  }
-  let scheduled=false;
-  function scheduleSync(){
-    if(scheduled) return;
-    scheduled=true;
-    requestAnimationFrame(function(){
-      scheduled=false;
-      syncLandscapeViewport();
-    });
-  }
-  window.addEventListener('resize',scheduleSync,{passive:true});
-  window.addEventListener('orientationchange',function(){requestAnimationFrame(function(){requestAnimationFrame(scheduleSync);});},{passive:true});
-  if(window.visualViewport) window.visualViewport.addEventListener('resize',scheduleSync,{passive:true});
-  syncLandscapeViewport();
-})();
+
 
 /* CP-012: responsive full-width layout for phones, tablets, and desktop */
 html,body{width:100%;max-width:100%;min-height:100%;margin:0;padding:0}
@@ -2682,6 +2648,45 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 })();
 </script>
 
+
+<!-- iOS Chrome landscape viewport synchronization -->
+<script>
+/* Keep the root layout width synchronized with iOS Chrome's visual viewport after rotation. */
+(function(){
+  function syncLandscapeViewport(){
+    const root=document.documentElement;
+    const body=document.body;
+    const isCompactLandscape=window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
+    if(!isCompactLandscape){
+      root.style.removeProperty('width');
+      root.style.removeProperty('max-width');
+      body.style.removeProperty('width');
+      body.style.removeProperty('max-width');
+      return;
+    }
+    const width=window.visualViewport ? window.visualViewport.width : window.innerWidth;
+    if(!Number.isFinite(width) || width<=0) return;
+    const value=width+'px';
+    root.style.setProperty('width',value,'important');
+    root.style.setProperty('max-width',value,'important');
+    body.style.setProperty('width',value,'important');
+    body.style.setProperty('max-width',value,'important');
+  }
+  let scheduled=false;
+  function scheduleSync(){
+    if(scheduled) return;
+    scheduled=true;
+    requestAnimationFrame(function(){
+      scheduled=false;
+      syncLandscapeViewport();
+    });
+  }
+  window.addEventListener('resize',scheduleSync,{passive:true});
+  window.addEventListener('orientationchange',function(){requestAnimationFrame(function(){requestAnimationFrame(scheduleSync);});},{passive:true});
+  if(window.visualViewport) window.visualViewport.addEventListener('resize',scheduleSync,{passive:true});
+  syncLandscapeViewport();
+})();
+</script>
 
 <!-- Temporary CastPoint viewport diagnostic; enabled only with ?cpdiag=1 -->
 <script>
