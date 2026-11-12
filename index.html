@@ -451,13 +451,7 @@ main.wrap{display:block;width:100%;max-width:none;margin:0;padding:22px 18px 46p
 @media(max-width:380px){
   main.wrap{padding-left:10px;padding-right:10px}
 }
-@media(orientation:landscape) and (max-height:500px) and (max-width:900px){
-  /* iPhone Chrome landscape: size page to the dynamic visual viewport */
-  html,body{width:100dvw;max-width:100dvw}
-  .app-header,main.wrap{width:100dvw;max-width:100dvw;margin-left:0;margin-right:0}
-  .app-header-art{aspect-ratio:5/1}
-  main.wrap{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
-}
+
 
 </style>
 </head>
@@ -2649,44 +2643,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 </script>
 
 
-<!-- iOS Chrome landscape viewport synchronization -->
-<script>
-/* Keep the root layout width synchronized with iOS Chrome's visual viewport after rotation. */
-(function(){
-  function syncLandscapeViewport(){
-    const root=document.documentElement;
-    const body=document.body;
-    const isCompactLandscape=window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
-    if(!isCompactLandscape){
-      root.style.removeProperty('width');
-      root.style.removeProperty('max-width');
-      body.style.removeProperty('width');
-      body.style.removeProperty('max-width');
-      return;
-    }
-    const width=window.visualViewport ? window.visualViewport.width : window.innerWidth;
-    if(!Number.isFinite(width) || width<=0) return;
-    const value=width+'px';
-    root.style.setProperty('width',value,'important');
-    root.style.setProperty('max-width',value,'important');
-    body.style.setProperty('width',value,'important');
-    body.style.setProperty('max-width',value,'important');
-  }
-  let scheduled=false;
-  function scheduleSync(){
-    if(scheduled) return;
-    scheduled=true;
-    requestAnimationFrame(function(){
-      scheduled=false;
-      syncLandscapeViewport();
-    });
-  }
-  window.addEventListener('resize',scheduleSync,{passive:true});
-  window.addEventListener('orientationchange',function(){requestAnimationFrame(function(){requestAnimationFrame(scheduleSync);});},{passive:true});
-  if(window.visualViewport) window.visualViewport.addEventListener('resize',scheduleSync,{passive:true});
-  syncLandscapeViewport();
-})();
-</script>
+
 
 <!-- Temporary CastPoint viewport diagnostic; enabled only with ?cpdiag=1 -->
 <script>
