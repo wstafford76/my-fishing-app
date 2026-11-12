@@ -459,6 +459,78 @@ main.wrap{display:block;width:100%;max-width:none;margin:0;padding:22px 18px 46p
 }
 
 
+
+
+/* CP-012: Low-glare dark navy theme */
+:root{
+ --navy:#071522;--blue:#102b40;--gold:#c9a45a;--paper:#091724;
+ --ink:#e2eaf0;--muted:#a5b5c2;--line:#294052;
+ --surface:#102334;--gold-soft:#332b1c;
+ color-scheme:dark;
+}
+html,body{background:#091724;color:#e2eaf0}
+body{background:radial-gradient(ellipse at 50% -180px,#17364d 0,transparent 620px),#091724}
+.app-header{background:#06121d;border-bottom-color:#b99148;box-shadow:0 8px 24px #0006}
+main.wrap{background:transparent}
+.panel>h2,.panel h2,.panel h3,.home-section-heading h2{color:#e7eef3}
+.main-tabs{background:#071522f5;border-color:#35495a;box-shadow:0 8px 24px #0005}
+.main-tab{color:#c4d0d9}
+.main-tab:hover{background:#ffffff12}
+.main-tab.active{background:linear-gradient(135deg,#d5b36c,#a77d36);color:#101b25;border-color:#e3c987}
+.home-welcome{background:radial-gradient(ellipse at 90% 0%,#23465d 0%,transparent 48%),linear-gradient(125deg,#071522,#102d43);border-color:#927640;box-shadow:0 14px 32px #0005}
+.home-action-card,.card,.stat,.storage-card,.inventory-item,.catch-card,.log-form,.saved-spots,.catch-stats,.catch-stat,.map-symbol-key,.note,.device-note,.home-tip{
+ background:#102334;color:#e2eaf0;border-color:#2b4355;box-shadow:0 5px 18px #0003
+}
+.home-action-card:hover,.card:hover{border-color:#927640;box-shadow:0 10px 24px #0005}
+.home-card-icon{background:#1b3548;color:#e6c579}
+.home-card-title,.card h2,.inventory-item h3,.catch-card h3,.saved-spots-heading h3,.saved-spot-info strong,.home-tip h3,.device-note h3{color:#e7eef3}
+.home-card-copy,.card p,.stat span,.catch-card p,.home-tip p,.home-footnote,.saved-spot-info span,.small-note,.map-help,.map-key-item,.map-key-note{color:#adbdc9}
+.home-card-link,.home-text-link{color:#e1bd72}
+.home-tip{background:linear-gradient(120deg,#172c3c,#102334);border-color:#665637}
+.home-tip-mark{background:#071522;color:#e5c579}
+.device-note{background:#182b39;border-color:#806a3d;color:#dce5eb}
+.device-note h3{color:#f0d28d}
+.device-note .note-label{color:#e5c579}
+.tag,.item-meta{background:#342d20;color:#e9ce91;border-color:#685735}
+.open,.action{background:linear-gradient(135deg,#1b4058,#0b2030);color:#f0f4f7;border-color:#38566a;box-shadow:0 3px 9px #0004}
+.open:hover,.action:hover{filter:brightness(1.18)}
+.action.secondary{background:#1b3040;color:#dce6ed;border-color:#3a5263}
+.filter,.main-tab{border-color:#30495b}
+.filter{background:#102334;color:#d9e4ec}
+.filter.active{background:#c5a15a;color:#101b25;border-color:#e2c77f}
+.search,.conditions-location input,.inventory-tools input,.inventory-tools select,.form-grid input,.form-grid textarea,.form-grid select,.form-grid label input,.form-grid label textarea{
+ background:#0b1c2a;color:#e5edf3;border-color:#385064;box-shadow:inset 0 1px 3px #0005
+}
+input::placeholder,textarea::placeholder{color:#8498a8}
+.search:focus,.conditions-location input:focus,.inventory-tools input:focus,.inventory-tools select:focus,.form-grid input:focus,.form-grid textarea:focus,.form-grid select:focus{outline:3px solid #c9a45a35;border-color:#c9a45a}
+.storage-card{background:#102334;color:#e4edf3;border-color:#30495b}
+.storage-card span{color:#a9bac7}
+.storage-card.active{background:linear-gradient(135deg,#1a4059,#0a1d2b);border-color:#c9a45a;box-shadow:0 0 0 2px #c9a45a55}
+.storage-card.active strong,.storage-card.active span{color:#fff}
+.stat strong,.catch-stat strong{color:#e4c47c}
+.catch-stat span,.catch-stat small,.catch-stat-note{color:#adbdc9}
+.inventory-item p,.catch-card p{color:#adbdc9}
+.item-buttons button,.saved-spot-card{background:#172d3d;color:#dce6ed;border-color:#385064}
+.saved-spot-card{background:#0c1e2c}
+.saved-spot-info span{color:#a9bac7}
+.saved-spots{background:#102334}
+.saved-spots-heading h3{color:#e7eef3}
+.map-symbol-key{background:#102334;color:#e2eaf0}
+.map-key-item strong{color:#e2eaf0}
+.map-key-note{color:#a5b5c2}
+.note{background:#172d3d;color:#c5d2dc}
+.dialog,dialog{background:#102334;color:#e2eaf0;border:1px solid #3a5263}
+dialog h2{color:#e7eef3}
+dialog::backdrop{background:#020a11cc}
+.form-grid label{color:#bac8d2}
+footer{color:#9aabb8}
+#fishingMap{border-color:#385064}
+.leaflet-control-zoom a,.leaflet-bar a{background:#102334!important;color:#e2eaf0!important;border-color:#385064!important}
+.leaflet-control-attribution{background:#0b1c2acc!important;color:#b5c3cd!important}
+.leaflet-control-attribution a{color:#e1bd72!important}
+button:focus-visible,a:focus-visible{outline:3px solid #d7b56e;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.panel{animation:none}}
+
 </style>
 </head>
 
