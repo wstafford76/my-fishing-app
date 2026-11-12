@@ -429,6 +429,21 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7a83d;outline-offset:3p
 
 
 
+
+/* CP-012 follow-up: full-viewport responsive app layout */
+html,body{width:100%;min-height:100%;margin:0}
+body{min-height:100vh;min-height:100svh;overflow-x:hidden}
+.app-header{width:100%;padding:0!important;margin:0}
+.app-header-art{display:block;width:100%;max-width:none;height:clamp(145px,33.3vw,320px);object-fit:cover;object-position:center}
+@media(max-width:900px){
+  main.wrap{width:100%;max-width:none;margin:0;padding:16px clamp(12px,2.5vw,24px) calc(100px + env(safe-area-inset-bottom))}
+}
+@media(max-width:620px){
+  .app-header{padding:0!important}
+  .app-header-art{width:100%;height:auto;aspect-ratio:4/1;object-fit:cover;object-position:center}
+  main.wrap{width:100%;max-width:none;padding:14px 12px calc(100px + env(safe-area-inset-bottom))}
+}
+
 </style>
 </head>
 
