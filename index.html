@@ -437,7 +437,8 @@ body{min-width:320px;min-height:100vh;min-height:100svh;overflow-x:hidden}
 .app-header-art{display:block;width:100%;max-width:none;height:clamp(150px,33.3vw,320px);object-fit:cover;object-position:center}
 main.wrap{display:block;width:100%;max-width:none;margin:0;padding:22px 18px 46px}
 @media(max-width:900px){
-  .app-header,main.wrap{width:100vw;max-width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}
+  /* Use the layout viewport directly; avoid iOS Safari 100vw centering drift */
+  .app-header,main.wrap{width:100%;max-width:100%;margin-left:0;margin-right:0}
   main.wrap{padding:16px clamp(12px,2.5vw,24px) calc(100px + env(safe-area-inset-bottom))}
 }
 @media(max-width:620px){
