@@ -2645,5 +2645,58 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 })();
 </script>
 
+
+<!-- Temporary CastPoint viewport diagnostic; enabled only with ?cpdiag=1 -->
+<script>
+(function () {
+  if (new URLSearchParams(location.search).get('cpdiag') !== '1') return;
+  const css = document.createElement('style');
+  css.textContent = `
+    #cpViewportDiagnostic{position:fixed!important;top:6px!important;left:6px!important;z-index:2147483647!important;width:min(340px,calc(100vw - 12px))!important;max-height:72vh!important;overflow:auto!important;box-sizing:border-box!important;padding:10px!important;border:2px solid #f0bd4e!important;border-radius:9px!important;background:rgba(5,15,25,.96)!important;color:#fff!important;font:11px/1.35 ui-monospace,monospace!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;box-shadow:0 3px 18px #0008!important}
+    #cpViewportDiagnostic button{margin:5px 5px 0 0!important;padding:5px 8px!important;color:#111!important;background:#f0bd4e!important;border:0!important;border-radius:5px!important;font:bold 11px Arial,sans-serif!important}
+  `;
+  document.head.appendChild(css);
+  const panel=document.createElement('section');
+  panel.id='cpViewportDiagnostic';
+  panel.innerHTML='<strong>CASTPOINT VIEWPORT DIAGNOSTIC</strong><pre id="cpViewportDiagnosticData">Collecting…</pre><button type="button" id="cpViewportCopy">Copy readings</button><button type="button" id="cpViewportClose">Close</button>';
+  document.body.appendChild(panel);
+  const r=n=>Number.isFinite(n)?Math.round(n*100)/100:String(n);
+  const rect=selector=>{const el=document.querySelector(selector);if(!el)return 'not found';const b=el.getBoundingClientRect();return 'left='+r(b.left)+', right='+r(b.right)+', width='+r(b.width)};
+  function collect(){
+    const v=window.visualViewport;
+    const main=document.querySelector('main.wrap');
+    const d=[
+      'Orientation: '+(matchMedia('(orientation: landscape)').matches?'landscape':'portrait'),
+      'Screen: '+screen.width+' x '+screen.height,
+      'DPR: '+devicePixelRatio,
+      'innerWidth x innerHeight: '+innerWidth+' x '+innerHeight,
+      'outerWidth x outerHeight: '+outerWidth+' x '+outerHeight,
+      'html clientWidth / scrollWidth: '+document.documentElement.clientWidth+' / '+document.documentElement.scrollWidth,
+      'body clientWidth / scrollWidth: '+document.body.clientWidth+' / '+document.body.scrollWidth,
+      'visualViewport width x height: '+(v?r(v.width)+' x '+r(v.height):'unavailable'),
+      'visualViewport offsetLeft / pageLeft: '+(v?r(v.offsetLeft)+' / '+r(v.pageLeft):'unavailable'),
+      'scrollX / scrollY: '+r(scrollX)+' / '+r(scrollY),
+      'HTML rect: '+rect('html'),
+      'BODY rect: '+rect('body'),
+      'HEADER rect: '+rect('.app-header'),
+      'MAIN rect: '+rect('main.wrap'),
+      'Main computed width: '+(main?getComputedStyle(main).width:'not found'),
+      'Body computed width: '+getComputedStyle(document.body).width,
+      'Updated: '+new Date().toLocaleTimeString()
+    ].join('\\n');
+    document.getElementById('cpViewportDiagnosticData').textContent=d;
+    return d;
+  }
+  document.getElementById('cpViewportCopy').addEventListener('click',async()=>{
+    try{await navigator.clipboard.writeText(collect());document.getElementById('cpViewportCopy').textContent='Copied'}
+    catch(e){document.getElementById('cpViewportDiagnosticData').textContent+='\\nCopy unavailable — take a screenshot.'}
+  });
+  document.getElementById('cpViewportClose').addEventListener('click',()=>panel.remove());
+  ['resize','orientationchange'].forEach(e=>addEventListener(e,collect));
+  if(window.visualViewport){visualViewport.addEventListener('resize',collect);visualViewport.addEventListener('scroll',collect)}
+  collect();
+})();
+</script>
+
 </body>
 </html>
