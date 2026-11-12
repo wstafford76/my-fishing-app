@@ -2660,6 +2660,11 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   panel.id='cpViewportDiagnostic';
   panel.innerHTML='<strong>CASTPOINT VIEWPORT DIAGNOSTIC</strong><pre id="cpViewportDiagnosticData">Collecting…</pre><button type="button" id="cpViewportCopy">Copy readings</button><button type="button" id="cpViewportClose">Close</button>';
   document.body.appendChild(panel);
+  const safeProbe=document.createElement('div');
+  safeProbe.style.cssText='position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+  document.body.appendChild(safeProbe);
+  const safeInsets=getComputedStyle(safeProbe);
+  const safeArea='top='+safeInsets.paddingTop+', right='+safeInsets.paddingRight+', bottom='+safeInsets.paddingBottom+', left='+safeInsets.paddingLeft;
   const r=n=>Number.isFinite(n)?Math.round(n*100)/100:String(n);
   const rect=selector=>{const el=document.querySelector(selector);if(!el)return 'not found';const b=el.getBoundingClientRect();return 'left='+r(b.left)+', right='+r(b.right)+', width='+r(b.width)};
   function collect(){
@@ -2671,6 +2676,8 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       'DPR: '+devicePixelRatio,
       'innerWidth x innerHeight: '+innerWidth+' x '+innerHeight,
       'outerWidth x outerHeight: '+outerWidth+' x '+outerHeight,
+      'screen availWidth x availHeight: '+screen.availWidth+' x '+screen.availHeight,
+      'safe-area insets: '+safeArea,
       'html clientWidth / scrollWidth: '+document.documentElement.clientWidth+' / '+document.documentElement.scrollWidth,
       'body clientWidth / scrollWidth: '+document.body.clientWidth+' / '+document.body.scrollWidth,
       'visualViewport width x height: '+(v?r(v.width)+' x '+r(v.height):'unavailable'),
