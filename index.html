@@ -449,6 +449,9 @@ main.wrap{display:block;width:100%;max-width:none;margin:0;padding:22px 18px 46p
   main.wrap{padding-left:10px;padding-right:10px}
 }
 @media(orientation:landscape) and (max-height:500px) and (max-width:900px){
+  /* iPhone Chrome landscape: size page to the dynamic visual viewport */
+  html,body{width:100dvw;max-width:100dvw}
+  .app-header,main.wrap{width:100dvw;max-width:100dvw;margin-left:0;margin-right:0}
   .app-header-art{aspect-ratio:5/1}
   main.wrap{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
 }
