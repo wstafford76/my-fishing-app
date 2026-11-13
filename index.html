@@ -531,6 +531,21 @@ footer{color:#9aabb8}
 button:focus-visible,a:focus-visible{outline:3px solid #d7b56e;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){.panel{animation:none}}
 
+
+/* CP-012 contrast correction: replace light-theme inline heading colors */
+.panel [style*="color:var(--navy)"],
+.panel [style*="color: var(--navy)"]{
+ color:#e2eaf0!important;
+}
+.panel .log-form h3,.panel .log-form h4,.panel .log-form h2,
+.panel .saved-spots h3,.panel .map-symbol-key summary{
+ color:#e2eaf0!important;
+}
+.panel .log-form .small-note,.panel .log-form .map-help,
+.panel .log-form label,.panel .log-form p{
+ color:#b4c3ce;
+}
+
 </style>
 </head>
 
