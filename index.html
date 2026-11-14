@@ -2811,47 +2811,95 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     mcAutocompleteItems = [];
     mcAutocompleteIndex = -1;
   }
-  function mcShowAutocomplete(field) {
-    const query = String(field.value || '').trim();
-    if (!query || field.disabled || field.readOnly) { mcCloseAutocomplete(); return; }
-    const key = mcAutocompleteKey(field);
-    const pool = [...(mcAutocompleteHistory[key] || []), ...(mcAutocompleteDefaults[key] || [])];
-    const seen = new Set();
-    mcAutocompleteItems = pool.filter(value => {
-      const normalized = String(value).toLocaleLowerCase();
-      if (!normalized.includes(query.toLocaleLowerCase()) || normalized === query.toLocaleLowerCase() || seen.has(normalized)) return false;
-      seen.add(normalized); return true;
-    }).slice(0,7);
-    if (!mcAutocompleteItems.length) { mcCloseAutocomplete(); return; }
-    mcAutocompleteActive = field;
-    mcAutocompleteIndex = -1;
+  let mcLocationSearchSequence = 0;
+  let mcLocationSearchTimer = null;
+  async function mcFetchLocationSuggestions(query) {
+    if (query.length < 3) return [];
+    const encoded = encodeURIComponent(query);
+    const requests = [
+      fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encoded+'&count=7&countryCode=US&language=en&format=json').then(async response => {
+        if (!response.ok) throw Error('Geocoding unavailable');
+        const data = await response.json();
+        return (data.results || []).map(place => ({
+          value: [place.name,place.admin1,place.country].filter(Boolean).join(', '),
+          lat:Number(place.latitude),lon:Number(place.longitude),kind:place.feature || place.type || 'Place'
+        }));
+      }),
+      fetch('https://photon.komoot.io/api/?q='+encoded+'&lat=30.0799&lon=-95.4172&limit=10&lang=en').then(async response => {
+        if (!response.ok) throw Error('Map search unavailable');
+        const data = await response.json();
+        return (data.features || []).map(feature => {
+          const p=feature.properties||{},coords=feature.geometry?.coordinates||[];
+          return {
+            value:[p.name,p.city||p.town||p.village||p.county,p.state,p.country].filter(Boolean).filter((v,i,a)=>a.findIndex(x=>String(x).toLowerCase()===String(v).toLowerCase())===i).join(', '),
+            lat:Number(coords[1]),lon:Number(coords[0]),kind:p.osm_value||p.type||'Mapped place'
+          };
+        });
+      })
+    ];
+    const results=await Promise.allSettled(requests),seen=new Set(),places=[];
+    for(const result of results) if(result.status==='fulfilled') for(const place of result.value){
+      const key=String(place.value||'').toLowerCase();
+      if(!key||!Number.isFinite(place.lat)||!Number.isFinite(place.lon)||seen.has(key))continue;
+      seen.add(key);places.push(place);
+    }
+    return places.slice(0,7);
+  }
+  function mcRenderAutocomplete(field, values) {
+    if (!values.length) { mcCloseAutocomplete(); return; }
+    mcAutocompleteActive=field;
+    mcAutocompleteItems=values;
+    mcAutocompleteIndex=-1;
     mcSuggestionList.replaceChildren();
-    mcAutocompleteItems.forEach((value,index) => {
-      const option = document.createElement('button');
-      option.type = 'button';
-      option.id = 'mcAutocompleteOption' + index;
+    values.forEach((item,index)=>{
+      const option=document.createElement('button');
+      option.type='button';
+      option.id='mcAutocompleteOption'+index;
       option.setAttribute('role','option');
       option.setAttribute('aria-selected','false');
-      option.textContent = value;
-      option.addEventListener('pointerdown', event => { event.preventDefault(); mcChooseAutocomplete(index); });
+      option.textContent=typeof item==='string'?item:item.value;
+      option.addEventListener('pointerdown',event=>{event.preventDefault();mcChooseAutocomplete(index);});
       mcSuggestionList.appendChild(option);
     });
-    const rect = field.getBoundingClientRect();
-    const width = Math.max(180,rect.width);
-    const left = Math.max(8,Math.min(rect.left,window.innerWidth-width-8));
-    const availableBelow = window.innerHeight-rect.bottom-8;
-    const top = availableBelow >= 120 || rect.top < 220 ? rect.bottom+4 : Math.max(8,rect.top-Math.min(220,mcSuggestionList.scrollHeight||180)-4);
-    mcSuggestionList.style.left = left+'px';
-    mcSuggestionList.style.top = top+'px';
-    mcSuggestionList.style.width = Math.min(width,window.innerWidth-16)+'px';
+    const rect=field.getBoundingClientRect(),width=Math.max(180,rect.width);
+    const left=Math.max(8,Math.min(rect.left,window.innerWidth-width-8));
+    const availableBelow=window.innerHeight-rect.bottom-8;
+    const top=availableBelow>=120||rect.top<220?rect.bottom+4:Math.max(8,rect.top-Math.min(220,mcSuggestionList.scrollHeight||180)-4);
+    mcSuggestionList.style.left=left+'px';
+    mcSuggestionList.style.top=top+'px';
+    mcSuggestionList.style.width=Math.min(width,window.innerWidth-16)+'px';
     mcSuggestionList.setAttribute('aria-hidden','false');
     field.setAttribute('aria-expanded','true');
     field.setAttribute('aria-controls','mcAutocompleteList');
   }
+  function mcShowAutocomplete(field) {
+    const query=String(field.value||'').trim();
+    if(!query||field.disabled||field.readOnly){mcCloseAutocomplete();return;}
+    const key=mcAutocompleteKey(field),pool=[...(mcAutocompleteHistory[key]||[]),...(mcAutocompleteDefaults[key]||[])],seen=new Set();
+    const local=pool.filter(value=>{
+      const normalized=String(value).toLocaleLowerCase();
+      if(!normalized.includes(query.toLocaleLowerCase())||normalized===query.toLocaleLowerCase()||seen.has(normalized))return false;
+      seen.add(normalized);return true;
+    }).slice(0,7);
+    if(key!=='location'){mcRenderAutocomplete(field,local);return;}
+    const requestId=++mcLocationSearchSequence;
+    if(mcLocationSearchTimer)clearTimeout(mcLocationSearchTimer);
+    mcRenderAutocomplete(field,local);
+    if(query.length<3)return;
+    mcLocationSearchTimer=window.setTimeout(async()=>{
+      const places=await mcFetchLocationSuggestions(query).catch(()=>[]);
+      if(requestId!==mcLocationSearchSequence||document.activeElement!==field||String(field.value||'').trim()!==query)return;
+      const merged=[...places,...local.map(value=>({value,lat:null,lon:null,kind:'Saved entry'}))];
+      const unique=[],keys=new Set();
+      for(const item of merged){const normalized=String(item.value).toLowerCase();if(!normalized||keys.has(normalized))continue;keys.add(normalized);unique.push(item);}
+      mcRenderAutocomplete(field,unique.slice(0,7));
+    },300);
+  }
   function mcChooseAutocomplete(index) {
     if (!mcAutocompleteActive || !mcAutocompleteItems[index]) return;
     const field = mcAutocompleteActive;
-    field.value = mcAutocompleteItems[index];
+    const selected=mcAutocompleteItems[index];
+    field.value = typeof selected==='string'?selected:selected.value;
     field.dispatchEvent(new Event('input',{bubbles:true}));
     field.dispatchEvent(new Event('change',{bubbles:true}));
     mcSaveAutocompleteValue(field);
