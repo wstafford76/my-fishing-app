@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#10243a">
-<meta name="apple-mobile-web-app-title" content="CastPoint">
-<meta name="application-name" content="CastPoint">
-<meta name="description" content="CastPoint — fishing locations, conditions, trip planning, tackle, and fishing logs.">
+<meta name="apple-mobile-web-app-title" content="ModusCast">
+<meta name="application-name" content="ModusCast">
+<meta name="description" content="ModusCast — fishing locations, conditions, trip planning, tackle, and fishing logs.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.png" type="image/png">
 <link rel="apple-touch-icon" href="icon.png">
-<title>CastPoint</title>
+<title>ModusCast</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -552,9 +552,9 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7b56e;outline-offset:3p
 <body>
 
 <header class="app-header">
-  <img class="app-header-art" src="assets/castpoint-header.png" alt="CastPoint — Surf to Inland Fishing">
+  <img class="app-header-art" src="assets/castpoint-header.png" alt="ModusCast — Surf to Inland Fishing">
   <div class="app-refresh-wrap">
-    <button id="appRefresh" class="app-refresh" type="button" aria-label="Refresh CastPoint" title="Refresh CastPoint">
+    <button id="appRefresh" class="app-refresh" type="button" aria-label="Refresh ModusCast" title="Refresh ModusCast">
       <span class="app-refresh-icon" aria-hidden="true">↻</span>
       <span>Refresh</span>
     </button>
@@ -681,7 +681,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 
   <div class="log-form">
     <h3 style="color:var(--navy);margin:0 0 8px">Export Data</h3>
-    <p class="small-note">Choose the type of information to export. Fishing-log exports include catches, Trip Conditions Timeline readings, and catch photos. Inventory exports contain tackle records. A complete backup includes all supported CastPoint records and photos.</p>
+    <p class="small-note">Choose the type of information to export. Fishing-log exports include catches, Trip Conditions Timeline readings, and catch photos. Inventory exports contain tackle records. A complete backup includes all supported ModusCast records and photos.</p>
     <div class="inventory-actions">
       <button class="action secondary" id="exportLog" type="button">Export Fishing Log</button>
       <button class="action secondary" id="exportLogSpreadsheet" type="button">Export Spreadsheet</button>
@@ -693,7 +693,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 
   <div class="log-form">
     <h3 style="color:var(--navy);margin:0 0 8px">Create Complete Backup</h3>
-    <p class="small-note">Create one portable file containing your CastPoint records and photos. Keep a copy somewhere outside this device, such as your computer, external drive, or cloud storage.</p>
+    <p class="small-note">Create one portable file containing your ModusCast records and photos. Keep a copy somewhere outside this device, such as your computer, external drive, or cloud storage.</p>
     <div class="inventory-actions">
       <button class="action" id="createFullBackup" type="button">Create Complete Backup</button>
     </div>
@@ -719,19 +719,19 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <details open><summary><strong>Full backup contents</strong></summary>
       <p class="small-note">Included: tackle inventory and gear photos; catch entries and catch photos; Trip Conditions Timeline snapshots; saved fishing locations; and the current freshwater/surf selection. Live weather, marine forecasts, tide predictions, maps, and other information fetched from online services are not archived as live data. Load conditions again on the new device when you need current readings.</p>
     </details>
-    <details><summary><strong>Transfer CastPoint to another device</strong></summary>
+    <details><summary><strong>Transfer ModusCast to another device</strong></summary>
       <ol class="small-note">
         <li>On the device with your data, open Data Management and select <strong>Create Complete Backup</strong>.</li>
         <li>Save <strong>castpoint-full-backup.json</strong> somewhere safe outside the device.</li>
         <li>Transfer that file to the destination phone or computer.</li>
-        <li>Open CastPoint on the destination device, go to Data Management, and select <strong>Restore full backup</strong>.</li>
+        <li>Open ModusCast on the destination device, go to Data Management, and select <strong>Restore full backup</strong>.</li>
         <li>Choose the JSON file and review the replacement warning before confirming.</li>
         <li>Wait for the completion message, then check your inventory, fishing log, photos, and saved locations.</li>
       </ol>
     </details>
     <details><summary><strong>Fishing-log transfer versus full backup</strong></summary>
       <p class="small-note">A fishing-log export is smaller and contains catches, Trip Conditions Timeline readings, and catch photos. Importing it adds records that are not already present; matching record IDs are skipped, so importing the same file again will not duplicate records. Existing fishing-log records are never overwritten or deleted.</p>
-      <p class="small-note">A full CastPoint backup includes inventory, gear and catch photos, fishing logs, trip conditions, saved locations, and fishing-mode selection. Restoring it replaces the corresponding data on the destination device.</p>
+      <p class="small-note">A full ModusCast backup includes inventory, gear and catch photos, fishing logs, trip conditions, saved locations, and fishing-mode selection. Restoring it replaces the corresponding data on the destination device.</p>
       <p class="small-note">Older version 2 fishing-log exports can still be imported, but they did not include photo files. Full backups and fishing-log exports are different file types; choose the matching import or restore action.</p>
     </details>
     <details><summary><strong>Important backup tips</strong></summary>
@@ -969,11 +969,11 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   <h2 style="color:var(--navy);margin:0">Fishing Help</h2>
   <p class="small-note">Plain-language explanations of the fishing conditions and tools in this app.</p>
   <div class="device-note" role="note" aria-label="Viewing orientation and browser compatibility">
-    <h3>Viewing CastPoint</h3>
-    <p><strong>Best viewed in landscape.</strong> CastPoint's maps, navigation, tackle lists, and fishing references are designed to make good use of a wider screen. Portrait orientation is supported, but some sections may feel more compact.</p>
+    <h3>Viewing ModusCast</h3>
+    <p><strong>Best viewed in landscape.</strong> ModusCast's maps, navigation, tackle lists, and fishing references are designed to make good use of a wider screen. Portrait orientation is supported, but some sections may feel more compact.</p>
     <p class="note-label">iPhone Chrome landscape display issue</p>
-    <p>Some versions of Chrome on iPhone may display white margins at the sides or allow the page to shift horizontally when the phone is turned sideways. This is related to how Chrome reports and updates its available page width during orientation changes. It is a browser display issue, not a CastPoint account or fishing-data problem.</p>
-    <p><strong>If it happens:</strong> Try refreshing the page after rotating the phone, or use Safari on iPhone for the most consistent landscape display. CastPoint remains usable in portrait mode as well.</p>
+    <p>Some versions of Chrome on iPhone may display white margins at the sides or allow the page to shift horizontally when the phone is turned sideways. This is related to how Chrome reports and updates its available page width during orientation changes. It is a browser display issue, not a ModusCast account or fishing-data problem.</p>
+    <p><strong>If it happens:</strong> Try refreshing the page after rotating the phone, or use Safari on iPhone for the most consistent landscape display. ModusCast remains usable in portrait mode as well.</p>
   </div>
   <div class="log-form">
     <h3 style="color:var(--navy);margin:0 0 8px">Tab-by-Tab How-To Guides</h3>
@@ -1040,7 +1040,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <p class="small-note"><strong>Purpose:</strong> Data Management lets you move saved information between devices and keep backup copies of your CastPoint records.</p>
       <ol class="small-note">
         <li>Use <strong>Export Fishing Log</strong> or <strong>Export Spreadsheet</strong> for catch records and trip condition readings. Use <strong>Export Inventory Data</strong> for tackle records.</li>
-        <li>Use <strong>Create Complete Backup</strong> to create a portable backup of supported CastPoint records and photos.</li>
+        <li>Use <strong>Create Complete Backup</strong> to create a portable backup of supported ModusCast records and photos.</li>
         <li>Transfer the exported file or backup to a safe location outside the device.</li>
         <li>On another device, use the matching import or restore option and select the file you transferred.</li>
         <li>Wait for the completion message, then check the imported catches, inventory, photos, and saved locations.</li>
@@ -1052,7 +1052,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
   <div class="log-form">
     <h3 style="color:var(--navy);margin:0 0 8px">Understanding Fishing Conditions</h3>
     <details open><summary><strong>How Pressure Changes Can Affect Fishing</strong></summary>
-      <p class="small-note"><strong>What barometric pressure means:</strong> Barometric pressure is the weight of the air above you. CastPoint displays it in hectopascals (hPa), a unit used to measure air pressure. Pressure is one clue about changing weather—not a fish-activity meter, and no single pressure number reliably switches fish on or off.</p>
+      <p class="small-note"><strong>What barometric pressure means:</strong> Barometric pressure is the weight of the air above you. ModusCast displays it in hectopascals (hPa), a unit used to measure air pressure. Pressure is one clue about changing weather—not a fish-activity meter, and no single pressure number reliably switches fish on or off.</p>
       <p class="small-note"><strong>Understanding the 3-, 12-, and 24-hour changes:</strong> Each value compares current pressure with the reading from that many hours earlier. A positive number means pressure increased; a negative number means it decreased. The 3-hour change shows recent movement, 12 hours gives a half-day view, and 24 hours shows the broader daily trend. For example, −1.7 hPa over 3 hours means pressure fell 1.7 hPa during that period. Compare the time periods together rather than relying on one reading.</p>
       <ul class="small-note">
         <li><strong>Rising pressure:</strong> Often follows a front. Conditions may be clearing, but fish can be less active for a period after a strong front. Try slower presentations and work likely holding areas.</li>
@@ -1134,7 +1134,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 
 </main>
 
-<footer>CastPoint · Your fishing companion</footer>
+<footer>ModusCast · Your fishing companion</footer>
 
 <section id="pdfViewer" class="pdf-viewer" hidden aria-label="PDF guide viewer">
   <div class="pdf-toolbar">
@@ -2459,7 +2459,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     return new Promise((resolve,reject)=>{const tx=db.transaction('photos','readonly'),store=tx.objectStore('photos'),req=store.getAllKeys();req.onsuccess=()=>{db.close();resolve(req.result||[]);};req.onerror=()=>{db.close();reject(req.error);};});
   }
   fullBackupButton.addEventListener('click',async()=>{
-    fullBackupButton.disabled=true;restoreBackupButton.disabled=true;fullBackupStatus.textContent='Collecting CastPoint records and photos…';
+    fullBackupButton.disabled=true;restoreBackupButton.disabled=true;fullBackupStatus.textContent='Collecting ModusCast records and photos…';
     try{
       const photoIds=[...new Set([...inventory.map(x=>x.photoId),...catchEntries.flatMap(x=>Array.isArray(x.photos)?x.photos:[])].filter(x=>typeof x==='string'&&x))];
       const photos=[];
@@ -2597,7 +2597,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       const workbook=XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook,worksheet,'Fishing Log');
       XLSX.writeFile(workbook,'castpoint-fishing-log.xlsx');
-      spreadsheetExportStatus.textContent='Excel spreadsheet created with '+rows.length+' catches. Each catch is on its own row. Your CastPoint records were not changed.';
+      spreadsheetExportStatus.textContent='Excel spreadsheet created with '+rows.length+' catches. Each catch is on its own row. Your ModusCast records were not changed.';
     }catch(e){
       spreadsheetExportStatus.textContent='Spreadsheet export failed: '+e.message;
       alert('Could not export the fishing log spreadsheet: '+e.message);
