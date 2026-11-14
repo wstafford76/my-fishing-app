@@ -546,6 +546,14 @@ button:focus-visible,a:focus-visible{outline:3px solid #d7b56e;outline-offset:3p
  color:#b4c3ce;
 }
 
+
+/* ModusCast autocomplete */
+.mc-autocomplete{position:fixed;z-index:10050;max-height:220px;overflow-y:auto;background:#fff;border:1px solid #cbd6df;border-radius:11px;box-shadow:0 10px 28px #0b1b2b26;padding:5px;display:none}
+.mc-autocomplete[aria-hidden="false"]{display:block}
+.mc-autocomplete button{display:block;width:100%;border:0;border-radius:7px;background:#fff;color:#172b3b;text-align:left;padding:10px 12px;font:inherit;font-size:.92rem;cursor:pointer}
+.mc-autocomplete button:hover,.mc-autocomplete button[aria-selected="true"]{background:#edf3f7;color:#10243a}
+.mc-autocomplete:empty{display:none}
+
 </style>
 </head>
 
@@ -2739,6 +2747,159 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       navigator.serviceWorker.register('./sw.js').catch(() => {});
     });
   }
+
+
+  // ModusCast autocomplete v1: field-specific suggestions learned locally on this device.
+  const mcAutocompleteStoreKey = 'moduscast-autocomplete-v1';
+  const mcAutocompleteDefaults = {
+    location: ['San Luis Pass, TX','Surfside Beach, TX','Freeport, TX','Galveston, TX','Brazos River, TX','Lake Conroe, TX'],
+    bait: ['Live Mullet','Cut Mullet','Mullet Chunk','Mullet Head','Live Shrimp','Dead Shrimp','Finger Mullet','Croaker','Soft Plastic','Paddle Tail','Gulp! Shrimp','Crab'],
+    rig: ['Carolina Rig','Fish Finder Rig','Texas Rig','Wacky Rig','Jighead','Drop Shot','Topwater Frog','Popping Cork'],
+    species: ['Speckled Trout','Redfish','Southern Flounder','Bull Drum','Largemouth Bass','Blue Catfish','Channel Catfish','Spanish Mackerel','Sheepshead','Pompano'],
+    'inventory-category': ['Hooks','Weights','Soft Baits','Hard Baits','Topwater','Jigs','Leaders','Line','Swivels','Terminal Tackle','Rods','Reels','Tools'],
+    'storage-box': ['Box 1','Box 2','Tackle Bag','KastKing Bag 1'],
+    'storage-compartment': ['Unassigned','C01','C02','C03']
+  };
+  let mcAutocompleteHistory = {};
+  try {
+    const savedSuggestions = JSON.parse(localStorage.getItem(mcAutocompleteStoreKey) || '{}');
+    if (savedSuggestions && typeof savedSuggestions === 'object' && !Array.isArray(savedSuggestions)) mcAutocompleteHistory = savedSuggestions;
+  } catch (error) { console.warn('Could not load autocomplete suggestions', error); }
+  const mcSuggestionList = document.createElement('div');
+  mcSuggestionList.className = 'mc-autocomplete';
+  mcSuggestionList.id = 'mcAutocompleteList';
+  mcSuggestionList.setAttribute('role','listbox');
+  mcSuggestionList.setAttribute('aria-label','Entry suggestions');
+  mcSuggestionList.setAttribute('aria-hidden','true');
+  document.body.appendChild(mcSuggestionList);
+  let mcAutocompleteActive = null;
+  let mcAutocompleteItems = [];
+  let mcAutocompleteIndex = -1;
+
+  function mcAutocompleteKey(field) {
+    const id = field.id || '';
+    const name = field.name || '';
+    if (id === 'conditionPlace' || id === 'catchLocation' || name === 'location') return 'location';
+    if (name === 'bait') return 'bait';
+    if (name === 'rig') return 'rig';
+    if (id === 'otherSpecies' || name === 'otherSpecies') return 'species';
+    if (name === 'category') return 'inventory-category';
+    if (name === 'box') return 'storage-box';
+    if (name === 'compartment') return 'storage-compartment';
+    if (name === 'name') return 'inventory-name';
+    if (name === 'quantity') return 'inventory-quantity';
+    if (name === 'details') return 'inventory-details';
+    if (name === 'status') return 'inventory-status';
+    if (name === 'notes') return 'catch-notes';
+    return id ? 'field-' + id : 'field-' + name;
+  }
+  function mcSaveAutocompleteValue(field) {
+    const value = String(field.value || '').trim();
+    if (!value || value.length > 100 || field.type === 'search' && field.id !== 'conditionPlace') return;
+    const key = mcAutocompleteKey(field);
+    const values = Array.isArray(mcAutocompleteHistory[key]) ? mcAutocompleteHistory[key] : [];
+    const normalized = value.toLocaleLowerCase();
+    mcAutocompleteHistory[key] = [value, ...values.filter(item => String(item).toLocaleLowerCase() !== normalized)].slice(0,40);
+    try { localStorage.setItem(mcAutocompleteStoreKey, JSON.stringify(mcAutocompleteHistory)); }
+    catch (error) { console.warn('Could not save autocomplete suggestion', error); }
+  }
+  function mcCloseAutocomplete() {
+    mcSuggestionList.setAttribute('aria-hidden','true');
+    mcSuggestionList.replaceChildren();
+    if (mcAutocompleteActive) mcAutocompleteActive.removeAttribute('aria-expanded');
+    mcAutocompleteActive = null;
+    mcAutocompleteItems = [];
+    mcAutocompleteIndex = -1;
+  }
+  function mcShowAutocomplete(field) {
+    const query = String(field.value || '').trim();
+    if (!query || field.disabled || field.readOnly) { mcCloseAutocomplete(); return; }
+    const key = mcAutocompleteKey(field);
+    const pool = [...(mcAutocompleteHistory[key] || []), ...(mcAutocompleteDefaults[key] || [])];
+    const seen = new Set();
+    mcAutocompleteItems = pool.filter(value => {
+      const normalized = String(value).toLocaleLowerCase();
+      if (!normalized.includes(query.toLocaleLowerCase()) || normalized === query.toLocaleLowerCase() || seen.has(normalized)) return false;
+      seen.add(normalized); return true;
+    }).slice(0,7);
+    if (!mcAutocompleteItems.length) { mcCloseAutocomplete(); return; }
+    mcAutocompleteActive = field;
+    mcAutocompleteIndex = -1;
+    mcSuggestionList.replaceChildren();
+    mcAutocompleteItems.forEach((value,index) => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.id = 'mcAutocompleteOption' + index;
+      option.setAttribute('role','option');
+      option.setAttribute('aria-selected','false');
+      option.textContent = value;
+      option.addEventListener('pointerdown', event => { event.preventDefault(); mcChooseAutocomplete(index); });
+      mcSuggestionList.appendChild(option);
+    });
+    const rect = field.getBoundingClientRect();
+    const width = Math.max(180,rect.width);
+    const left = Math.max(8,Math.min(rect.left,window.innerWidth-width-8));
+    const availableBelow = window.innerHeight-rect.bottom-8;
+    const top = availableBelow >= 120 || rect.top < 220 ? rect.bottom+4 : Math.max(8,rect.top-Math.min(220,mcSuggestionList.scrollHeight||180)-4);
+    mcSuggestionList.style.left = left+'px';
+    mcSuggestionList.style.top = top+'px';
+    mcSuggestionList.style.width = Math.min(width,window.innerWidth-16)+'px';
+    mcSuggestionList.setAttribute('aria-hidden','false');
+    field.setAttribute('aria-expanded','true');
+    field.setAttribute('aria-controls','mcAutocompleteList');
+  }
+  function mcChooseAutocomplete(index) {
+    if (!mcAutocompleteActive || !mcAutocompleteItems[index]) return;
+    const field = mcAutocompleteActive;
+    field.value = mcAutocompleteItems[index];
+    field.dispatchEvent(new Event('input',{bubbles:true}));
+    field.dispatchEvent(new Event('change',{bubbles:true}));
+    mcSaveAutocompleteValue(field);
+    mcCloseAutocomplete();
+    field.focus();
+  }
+  function mcIsAutocompleteField(field) {
+    if (!(field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement)) return false;
+    if (field instanceof HTMLInputElement) {
+      const type = (field.type || 'text').toLowerCase();
+      if (!['text','search'].includes(type)) return false;
+      if (type === 'search' && field.id !== 'conditionPlace') return false;
+    }
+    return !['search','invSearch'].includes(field.id) && !field.disabled && !field.readOnly;
+  }
+  document.addEventListener('focusin', event => {
+    if (mcIsAutocompleteField(event.target)) mcShowAutocomplete(event.target);
+  });
+  document.addEventListener('input', event => {
+    if (mcIsAutocompleteField(event.target)) mcShowAutocomplete(event.target);
+  });
+  document.addEventListener('change', event => {
+    if (mcIsAutocompleteField(event.target)) mcSaveAutocompleteValue(event.target);
+  });
+  document.addEventListener('focusout', event => {
+    if (mcIsAutocompleteField(event.target)) {
+      mcSaveAutocompleteValue(event.target);
+      window.setTimeout(() => { if (!mcSuggestionList.matches(':hover')) mcCloseAutocomplete(); },120);
+    }
+  });
+  document.addEventListener('keydown', event => {
+    if (!mcAutocompleteActive || event.target !== mcAutocompleteActive) return;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      mcAutocompleteIndex = (mcAutocompleteIndex + (event.key === 'ArrowDown' ? 1 : -1) + mcAutocompleteItems.length) % mcAutocompleteItems.length;
+      [...mcSuggestionList.children].forEach((option,index) => {
+        option.setAttribute('aria-selected',String(index === mcAutocompleteIndex));
+        if (index === mcAutocompleteIndex) option.scrollIntoView({block:'nearest'});
+      });
+    } else if (event.key === 'Enter' && mcAutocompleteIndex >= 0) {
+      event.preventDefault(); mcChooseAutocomplete(mcAutocompleteIndex);
+    } else if (event.key === 'Escape') mcCloseAutocomplete();
+  });
+  document.addEventListener('pointerdown', event => {
+    if (mcAutocompleteActive && event.target !== mcAutocompleteActive && !mcSuggestionList.contains(event.target)) mcCloseAutocomplete();
+  });
+  window.addEventListener('resize',mcCloseAutocomplete);
+  window.addEventListener('scroll',mcCloseAutocomplete,true);
 
 })();
 </script>
