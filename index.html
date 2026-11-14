@@ -702,7 +702,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
 
   <div class="log-form">
     <h3 style="color:var(--navy);margin:0 0 8px">Import Data / Restore Backup</h3>
-    <p class="small-note">Fishing-log imports add new catches and condition readings without overwriting existing records. Inventory imports restore inventory data. A full-backup restore replaces the corresponding CastPoint data on this device.</p>
+    <p class="small-note">Fishing-log imports add new catches and condition readings without overwriting existing records. Inventory imports restore inventory data. A full-backup restore replaces the corresponding ModusCast data on this device.</p>
     <div class="inventory-actions">
       <button class="action secondary" id="importLog" type="button">Import fishing log</button>
       <input type="file" id="importLogFile" accept="application/json,.json" hidden>
@@ -737,9 +737,9 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <details><summary><strong>Important backup tips</strong></summary>
       <ul class="small-note">
         <li>Create a new backup after adding important catches, photos, or inventory items.</li>
-        <li>Keep at least one backup copy somewhere other than the phone running CastPoint.</li>
+        <li>Keep at least one backup copy somewhere other than the phone running ModusCast.</li>
         <li>Export destination-device data you want to keep before restoring a full backup.</li>
-        <li>Do not close CastPoint while a restore is running. Wait for the completion message.</li>
+        <li>Do not close ModusCast while a restore is running. Wait for the completion message.</li>
         <li>Backups can be large when they contain many photos. Keep the original backup until you have checked the restored data.</li>
       </ul>
     </details>
@@ -1037,7 +1037,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       <p class="small-note"><strong>Offline use:</strong> Open a guide while online first so the device has an opportunity to save it for offline use. Offline availability is not guaranteed for every guide or device.</p>
     </details>
     <details><summary><strong>Data Management — Export, import, and protect your records</strong></summary>
-      <p class="small-note"><strong>Purpose:</strong> Data Management lets you move saved information between devices and keep backup copies of your CastPoint records.</p>
+      <p class="small-note"><strong>Purpose:</strong> Data Management lets you move saved information between devices and keep backup copies of your ModusCast records.</p>
       <ol class="small-note">
         <li>Use <strong>Export Fishing Log</strong> or <strong>Export Spreadsheet</strong> for catch records and trip condition readings. Use <strong>Export Inventory Data</strong> for tackle records.</li>
         <li>Use <strong>Create Complete Backup</strong> to create a portable backup of supported ModusCast records and photos.</li>
@@ -1069,7 +1069,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     <details><summary><strong>Measured, modeled, and unverified map information</strong></summary><p class="small-note">Measured means a sensor reported data at its gauge or station. Predicted means a station's tide/current forecast. Modeled means a computer model estimates conditions across an area. Unverified means the app has no reliable data for that exact patch of water. A nearby station does not prove the current at your fishing spot, and the app does not draw guessed arrows between stations.</p></details>
     <details><summary><strong>Freshwater flow rate and gauge height</strong></summary><p class="small-note">USGS streamflow (discharge) is the volume of water passing a point each second, usually shown in cubic feet per second (cfs). A higher cfs generally means more water moving through that river or creek, but it is not the speed of water at your exact bank spot. Gauge height is the water level at that monitoring station relative to its own reference gauge—not the depth of the lake. Lakes and ponds often have no current gauge; wind, inflowing creeks, dam releases, and outlets can still create localized movement. If no nearby gauge exists, the app will say so rather than invent a current reading.</p></details>
     <details><summary><strong>Best Fishing Windows — How the Score Works</strong></summary>
-      <p class="small-note">Each time period starts with a neutral score of 50 points. CastPoint then adds points for forecast conditions that are generally more manageable for fishing and subtracts points for conditions that may make fishing more difficult. The final score is limited to 0–100. A higher score means the forecast looks more favorable compared with the other time periods for that date; it does not mean a fish is more likely to bite by that percentage.</p>
+      <p class="small-note">Each time period starts with a neutral score of 50 points. ModusCast then adds points for forecast conditions that are generally more manageable for fishing and subtracts points for conditions that may make fishing more difficult. The final score is limited to 0–100. A higher score means the forecast looks more favorable compared with the other time periods for that date; it does not mean a fish is more likely to bite by that percentage.</p>
       <p class="small-note"><strong>Weather points:</strong> Wind is one of the biggest factors. Lighter wind earns more points, while stronger wind lowers the score; the app uses different wind ranges for freshwater and saltwater. A gust forecast of 20 mph or more subtracts 10 points. Rain chances of 20% or less add 5 points, while chances above 50% subtract 8. Temperatures from 55° to 82°F add 4 points; temperatures below 40° or above 92°F subtract 5. A pressure rise of at least 0.5 hPa adds 4 points, while a drop of 0.7 hPa or more subtracts 3.</p>
       <p class="small-note"><strong>Extra saltwater points:</strong> When marine forecast data is available, wave heights of 2 feet or less add 10 points; higher waves add fewer points or subtract points as conditions get rougher. Wave periods from 7 to 11 seconds add 3 points. When NOAA tide predictions are available, the app gives a small boost during periods of stronger estimated water movement. Tide timing is not scored if predictions are unavailable.</p>
       <p class="small-note"><strong>Lunar context:</strong> The moon phase is calculated for the selected date. Periods near a new or full moon receive a very small 1-point context bonus because spring-tide ranges are commonly greater around those phases. This is not a prediction of fish activity or a substitute for local tide data. The actual NOAA tide schedule remains a separate input to the saltwater score; quarter-moon periods are commonly associated with smaller neap-tide ranges.</p>
@@ -2468,7 +2468,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       const blob=new Blob([JSON.stringify(backup)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
       a.href=url;a.download='castpoint-full-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
       fullBackupStatus.textContent='Full backup created: '+inventory.length+' inventory items, '+catchEntries.length+' catches, '+tripConditionEntries.length+' condition snapshots, '+savedFishingSpots.length+' saved locations, and '+photos.length+' photos.';
-    }catch(e){fullBackupStatus.textContent='Backup failed: '+e.message;alert('Could not create a full CastPoint backup: '+e.message);}
+    }catch(e){fullBackupStatus.textContent='Backup failed: '+e.message;alert('Could not create a full ModusCast backup: '+e.message);}
     finally{fullBackupButton.disabled=false;restoreBackupButton.disabled=false;}
   });
   restoreBackupButton.addEventListener('click',()=>fullBackupInput.click());
@@ -2479,8 +2479,8 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     let oldValues={};
     try{
       const parsed=JSON.parse(await file.text()),data=parsed?.data,photos=parsed?.photos;
-      if(parsed?.format==='CastPoint Fishing Log Backup'||parsed?.format==='My Fishing Reference Fishing Log Backup')throw Error('This is a fishing-log export, not a full CastPoint backup. Use Fishing Log → Import log backup for that file.');
-      if(parsed?.format!=='CastPoint Full Backup'||parsed?.version!==1||!data||!Array.isArray(photos))throw Error('Unsupported file. Choose a CastPoint Full Backup created with Help → Create full backup.');
+      if(parsed?.format==='CastPoint Fishing Log Backup'||parsed?.format==='My Fishing Reference Fishing Log Backup')throw Error('This is a fishing-log export, not a full ModusCast backup. Use Fishing Log → Import log backup for that file.');
+      if(parsed?.format!=='CastPoint Full Backup'||parsed?.version!==1||!data||!Array.isArray(photos))throw Error('Unsupported file. Choose a full ModusCast backup created with Help → Create full backup.');
       const arrays=[data.inventory,data.catchEntries,data.tripConditionEntries,data.savedFishingSpots];
       if(!arrays.every(Array.isArray))throw Error('One or more record collections are missing or invalid.');
       if(!data.inventory.every(x=>x&&typeof x.name==='string')||!data.catchEntries.every(x=>x&&typeof x.id==='string'&&typeof x.species==='string')||!data.tripConditionEntries.every(x=>x&&typeof x.id==='string')||!data.savedFishingSpots.every(x=>x&&typeof x.label==='string'&&Number.isFinite(x.lat)&&Number.isFinite(x.lon)))throw Error('The backup contains invalid inventory, catch, trip, or location records.');
@@ -2489,7 +2489,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       for(const p of photos){if(!p||typeof p.id!=='string'||!p.id||photoMap.has(p.id)||!/^image\/(jpeg|png|webp|gif)$/.test(p.mime||''))throw Error('The backup contains an invalid or duplicate photo.');photoMap.set(p.id,p);}
       const referenced=[...data.inventory.map(x=>x.photoId),...data.catchEntries.flatMap(x=>Array.isArray(x.photos)?x.photos:[])].filter(Boolean);
       if(referenced.some(id=>typeof id!=='string'||!photoMap.has(id)))throw Error('A gear or catch photo is missing from the backup.');
-      const message='Restore this CastPoint backup?\n\nCreated: '+(parsed.createdAt?new Date(parsed.createdAt).toLocaleString():'Unknown date')+'\nInventory items: '+data.inventory.length+'\nCatches: '+data.catchEntries.length+'\nTrip snapshots: '+data.tripConditionEntries.length+'\nSaved locations: '+data.savedFishingSpots.length+'\nPhotos: '+photos.length+'\n\nThis replaces those records on this device. It does not merge them.';
+      const message='Restore this ModusCast backup?\n\nCreated: '+(parsed.createdAt?new Date(parsed.createdAt).toLocaleString():'Unknown date')+'\nInventory items: '+data.inventory.length+'\nCatches: '+data.catchEntries.length+'\nTrip snapshots: '+data.tripConditionEntries.length+'\nSaved locations: '+data.savedFishingSpots.length+'\nPhotos: '+photos.length+'\n\nThis replaces those records on this device. It does not merge them.';
       if(!confirm(message))return;
       fullBackupStatus.textContent='Restoring photos and records…';
       const restoredInventory=data.inventory.map(x=>({...x})),restoredCatches=data.catchEntries.map(x=>({...x,photos:Array.isArray(x.photos)?[...x.photos]:[]}));
@@ -2510,7 +2510,7 @@ data-search="butchers bite bait lures artificial bait lure color selection water
       if(Object.keys(oldValues).length){for(const [key,value] of Object.entries(oldValues)){try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);}catch(rollbackError){}}}
       for(const id of addedPhotoIds){try{await photoDelete(id);}catch(cleanupError){}}
       fullBackupStatus.textContent='Restore failed: '+e.message;
-      alert('Could not restore this CastPoint backup: '+e.message+' Your previous records were preserved where browser storage allowed.');
+      alert('Could not restore this ModusCast backup: '+e.message+' Your previous records were preserved where browser storage allowed.');
     }finally{event.target.value='';fullBackupButton.disabled=false;restoreBackupButton.disabled=false;}
   });
   function compressPhoto(file){return new Promise((resolve,reject)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const scale=Math.min(1,1600/Math.max(img.width,img.height)),canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);canvas.toBlob(blob=>blob?resolve(blob):reject(Error('Photo could not be processed.')),'image/jpeg',.82);};img.onerror=()=>{URL.revokeObjectURL(url);reject(Error('One photo could not be opened.'));};img.src=url;});}
@@ -2612,10 +2612,10 @@ data-search="butchers bite bait lures artificial bait lure color selection water
     importLogButton.disabled=true;document.getElementById('exportLog').disabled=true;logImportStatus.textContent='Checking fishing log file…';
     try{
       const parsed=JSON.parse(await file.text());let entries,trips,photos,legacy=false;
-      if(parsed?.format==='CastPoint Full Backup')throw Error('This is a full CastPoint backup, not a fishing-log export. Use Data Management → Restore full backup for that file.');
+      if(parsed?.format==='CastPoint Full Backup')throw Error('This is a full ModusCast backup, not a fishing-log export. Use Data Management → Restore full backup for that file.');
       if(parsed?.format==='CastPoint Fishing Log Backup'&&parsed?.version===3){entries=parsed.entries;trips=parsed.tripConditions;photos=parsed.photos;}
       else if(parsed?.format==='My Fishing Reference Fishing Log Backup'&&parsed?.version===2){entries=parsed.entries;trips=parsed.tripConditions;photos=[];legacy=true;}
-      else throw Error('Unsupported file. Choose a CastPoint Fishing Log Backup (or an older version 2 fishing-log export). Full backups must be restored from Data Management.');
+      else throw Error('Unsupported file. Choose a ModusCast fishing-log backup (or an older version 2 fishing-log export). Full backups must be restored from Data Management.');
       if(!Array.isArray(entries)||!Array.isArray(trips)||!Array.isArray(photos))throw Error('The fishing-log file is incomplete: catches, condition readings, or photos are missing.');
       if(!entries.every(x=>x&&typeof x.id==='string'&&x.id&&typeof x.species==='string')||!trips.every(x=>x&&typeof x.id==='string'&&x.id&&typeof x.capturedAt==='string'))throw Error('The file contains invalid catch or condition records.');
       const photoMap=new Map();
